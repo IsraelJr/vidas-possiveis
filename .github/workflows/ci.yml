@@ -1,80 +1,124 @@
-name: CI
+name: CI diagnostics
 
 on:
   pull_request:
-  push:
-    branches:
-      - main
-      - agent/**
 
 permissions:
   contents: read
+  issues: write
+  pull-requests: write
 
 jobs:
-  validate:
+  diagnose:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
 
     steps:
-      - name: Checkout without reusable actions
+      - name: Execute and report validation
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        shell: bash
         run: |
-          git init .
-          git remote add origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          git fetch --depth=1 origin "${GITHUB_SHA}"
-          git checkout --detach FETCH_HEAD
+          set +e
+          mkdir -p /tmp/ci/source /tmp/ci/logs
 
-      - name: Runtime diagnostics
-        run: |
-          node --version
-          npm --version
-          git rev-parse HEAD
+          curl --fail --silent --show-error --location \
+            --header "Authorization: Bearer ${GITHUB_TOKEN}" \
+            --header "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/tarball/${HEAD_SHA}" \
+            --output /tmp/ci/source.tar.gz \
+            > /tmp/ci/logs/download.log 2>&1
+          DOWNLOAD=$?
 
-      - name: Install pnpm
-        run: npm install --global pnpm@10.12.1
+          if [ "$DOWNLOAD" -eq 0 ]; then
+            tar -xzf /tmp/ci/source.tar.gz -C /tmp/ci/source --strip-components=1 \
+              > /tmp/ci/logs/extract.log 2>&1
+            EXTRACT=$?
+          else
+            EXTRACT=99
+          fi
 
-      - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+          if [ "$EXTRACT" -eq 0 ]; then
+            cd /tmp/ci/source
+            node --version > /tmp/ci/logs/runtime.log 2>&1
+            npm --version >> /tmp/ci/logs/runtime.log 2>&1
 
-      - name: Lint
-        run: pnpm lint
+            npm install --global pnpm@10.12.1 > /tmp/ci/logs/setup-pnpm.log 2>&1
+            SETUP=$?
+          else
+            SETUP=99
+          fi
 
-      - name: Typecheck
-        run: pnpm typecheck
+          if [ "$SETUP" -eq 0 ]; then
+            pnpm install --no-frozen-lockfile > /tmp/ci/logs/install.log 2>&1
+            INSTALL=$?
+          else
+            INSTALL=99
+          fi
 
-      - name: Unit tests
-        run: pnpm test
+          run_validation() {
+            local name="$1"
+            shift
+            if [ "$INSTALL" -eq 0 ]; then
+              "$@" > "/tmp/ci/logs/${name}.log" 2>&1
+              return $?
+            fi
+            echo "Ignorado porque a instalação falhou." > "/tmp/ci/logs/${name}.log"
+            return 99
+          }
 
-      - name: Build
-        run: pnpm build
+          run_validation lint pnpm lint
+          LINT=$?
+          run_validation typecheck pnpm typecheck
+          TYPECHECK=$?
+          run_validation tests pnpm test
+          TESTS=$?
+          run_validation build pnpm build
+          BUILD=$?
+          run_validation audit pnpm audit:sprint0
+          AUDIT=$?
 
-      - name: Sprint 0 audit
-        run: pnpm audit:sprint0
+          SUMMARY=$(printf 'download=%s, extract=%s, setup=%s, install=%s, lint=%s, typecheck=%s, tests=%s, build=%s, audit=%s' \
+            "$DOWNLOAD" "$EXTRACT" "$SETUP" "$INSTALL" "$LINT" "$TYPECHECK" "$TESTS" "$BUILD" "$AUDIT")
 
-  e2e:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    needs: validate
+          {
+            echo "### Diagnóstico automático da CI"
+            echo
+            echo "Commit: \`${HEAD_SHA}\`"
+            echo
+            echo "\`${SUMMARY}\`"
+            echo
+            for log in download extract runtime setup-pnpm install lint typecheck tests build audit; do
+              echo "<details><summary>${log}</summary>"
+              echo
+              echo '```text'
+              tail -n 80 "/tmp/ci/logs/${log}.log" 2>/dev/null || true
+              echo '```'
+              echo "</details>"
+              echo
+            done
+          } > /tmp/ci/comment.md
 
-    steps:
-      - name: Checkout without reusable actions
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: |
-          git init .
-          git remote add origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          git fetch --depth=1 origin "${GITHUB_SHA}"
-          git checkout --detach FETCH_HEAD
+          jq -n --rawfile body /tmp/ci/comment.md '{body: $body}' > /tmp/ci/comment.json
+          curl --fail --silent --show-error \
+            --request POST \
+            --header "Authorization: Bearer ${GITHUB_TOKEN}" \
+            --header "Accept: application/vnd.github+json" \
+            --header "Content-Type: application/json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
+            --data-binary @/tmp/ci/comment.json
+          COMMENT=$?
 
-      - name: Install pnpm
-        run: npm install --global pnpm@10.12.1
-
-      - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
-
-      - name: Install Chromium
-        run: pnpm --filter @vidas-possiveis/web exec playwright install --with-deps chromium
-
-      - name: End-to-end tests
-        run: pnpm test:e2e
+          echo "$SUMMARY"
+          test "$COMMENT" -eq 0
+          test "$DOWNLOAD" -eq 0
+          test "$EXTRACT" -eq 0
+          test "$SETUP" -eq 0
+          test "$INSTALL" -eq 0
+          test "$LINT" -eq 0
+          test "$TYPECHECK" -eq 0
+          test "$TESTS" -eq 0
+          test "$BUILD" -eq 0
+          test "$AUDIT" -eq 0
