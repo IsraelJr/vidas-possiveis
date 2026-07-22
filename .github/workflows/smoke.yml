@@ -1,0 +1,13 @@
+name: Actions smoke test
+
+on:
+  pull_request:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Confirm runner execution
+        run: |
+          echo "GitHub Actions runner started successfully."
+          node --version
