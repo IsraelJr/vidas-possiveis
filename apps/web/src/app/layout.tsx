@@ -7,11 +7,7 @@ export const metadata: Metadata = {
   description: "RPG narrativo de vida e carreira"
 };
 
-export default function RootLayout({
-  children
-}: Readonly<{
-  children: ReactNode;
-}>) {
+export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <html lang="pt-BR">
       <body>{children}</body>

@@ -1,48 +1,37 @@
 import { access, readFile } from "node:fs/promises";
+import { constants } from "node:fs";
 
 const requiredFiles = [
-  "src/game.ts",
-  "src/app/page.tsx",
-  "src/app/layout.tsx",
-  "src/app/globals.css",
-  "tests/game.test.ts",
-  "e2e/game.spec.ts",
-  "playwright.config.ts",
+  "apps/web/src/app/page.tsx",
+  "apps/web/src/components/game-shell.tsx",
+  "packages/game-engine/src/clock.ts",
+  "packages/game-engine/src/effects.ts",
+  "packages/game-engine/src/skill-check.ts",
+  "packages/narrative/src/content.ts",
+  "packages/persistence/src/indexed-db-save-repository.ts",
   ".github/workflows/ci.yml",
-  "docs/SPRINT_0.md"
+  "docs/HANDOFF_REFERENCE.md"
 ];
 
 const failures = [];
 
 for (const file of requiredFiles) {
   try {
-    await access(file);
+    await access(file, constants.R_OK);
   } catch {
     failures.push(`Arquivo obrigatório ausente: ${file}`);
   }
 }
 
-const page = await readFile("src/app/page.tsx", "utf8");
-
-for (const marker of [
-  'data-testid="game-clock"',
-  "Próximo compromisso",
-  "Local:"
-]) {
-  if (!page.includes(marker)) {
-    failures.push(`Relógio sem marcador obrigatório: ${marker}`);
+const gameShell = await readFile("apps/web/src/components/game-shell.tsx", "utf8");
+for (const marker of ['data-testid="game-clock"', "Próximo compromisso", "Local:"]) {
+  if (!gameShell.includes(marker)) {
+    failures.push(`Relógio/contexto não contém marcador obrigatório: ${marker}`);
   }
 }
 
 const workflow = await readFile(".github/workflows/ci.yml", "utf8");
-
-for (const command of [
-  "pnpm lint",
-  "pnpm typecheck",
-  "pnpm test",
-  "pnpm build",
-  "pnpm test:e2e"
-]) {
+for (const command of ["pnpm lint", "pnpm typecheck", "pnpm test", "pnpm build", "pnpm test:e2e"]) {
   if (!workflow.includes(command)) {
     failures.push(`CI não executa: ${command}`);
   }
@@ -50,9 +39,7 @@ for (const command of [
 
 if (failures.length > 0) {
   console.error("Auditoria da Sprint 0 reprovada:");
-  for (const failure of failures) {
-    console.error(`- ${failure}`);
-  }
+  for (const failure of failures) console.error(`- ${failure}`);
   process.exit(1);
 }
 

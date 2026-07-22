@@ -3,32 +3,23 @@
   "version": "0.1.0",
   "private": true,
   "packageManager": "pnpm@10.12.1",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
+    "dev": "pnpm --filter @vidas-possiveis/web dev",
+    "build": "pnpm --filter @vidas-possiveis/web build",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run",
-    "test:e2e": "playwright test",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "test:coverage": "pnpm -r test:coverage",
+    "test:e2e": "pnpm --filter @vidas-possiveis/web test:e2e",
     "audit:sprint0": "node scripts/audit-sprint0.mjs"
   },
-  "dependencies": {
-    "idb": "^8.0.3",
-    "next": "^15.5.0",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "zod": "^4.1.5"
-  },
   "devDependencies": {
-    "@playwright/test": "^1.55.0",
     "@types/node": "^22.15.30",
-    "@types/react": "^19.1.10",
-    "@types/react-dom": "^19.1.7",
     "eslint": "^9.35.0",
     "eslint-config-next": "^15.5.0",
-    "typescript": "^5.8.3",
-    "vitest": "^3.2.4"
+    "typescript": "^5.8.3"
   }
 }

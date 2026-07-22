@@ -1,30 +1,27 @@
 # Vidas Possíveis
 
-RPG narrativo textual de vida e carreira. O jogador constrói sua trajetória desde a escola, administra tempo, energia e recursos, e enfrenta consequências profissionais e pessoais.
+RPG narrativo de vida e carreira. A Sprint 0 entrega a fundação técnica do MVP textual com motor independente, relógio explícito, primeira cena jogável, persistência local e testes automatizados.
 
-## Sprint 0
+## Stack
 
-A fundação do MVP entrega:
+- Next.js + React + TypeScript
+- pnpm workspaces
+- Vitest
+- Playwright
+- Zod
+- IndexedDB
 
-- Next.js, React e TypeScript estrito;
-- motor de domínio independente da interface;
-- relógio, data, localização e próximo compromisso sempre perceptíveis;
-- criação básica da vida e origem socioeconômica;
-- primeira cena escolar jogável;
-- escolhas condicionais, efeitos imutáveis e avanço explícito do tempo;
-- teste percentual determinístico por seed;
-- save automático no IndexedDB;
-- painel de atributos, consequências e depuração;
-- testes unitários, E2E, CI e auditoria automatizada.
+## Estrutura
 
-O escopo detalhado está em [`docs/SPRINT_0.md`](docs/SPRINT_0.md).
+```text
+apps/web                 Interface Next.js
+packages/game-engine     Regras puras do domínio
+packages/narrative       Conteúdo e validação narrativa
+packages/persistence     Save local e contratos de persistência
+docs                     referência canônica e auditorias
+```
 
-## Executar localmente
-
-Requisitos:
-
-- Node.js 22 ou superior;
-- pnpm 10.
+## Desenvolvimento
 
 ```bash
 corepack enable
@@ -32,31 +29,23 @@ pnpm install
 pnpm dev
 ```
 
-Abra `http://localhost:3000`.
+Acesse `http://localhost:3000`.
 
-## Validar
+## Validação
 
 ```bash
 pnpm lint
 pnpm typecheck
 pnpm test
 pnpm build
-pnpm exec playwright install chromium
 pnpm test:e2e
 pnpm audit:sprint0
 ```
 
-## Arquitetura inicial
+## Decisões arquiteturais
 
-```text
-src/game.ts             motor, narrativa e persistência
-src/app/                interface Next.js
-tests/                  testes unitários e de integridade
-e2e/                    jornada jogável no navegador
-scripts/                 auditoria automatizada
-docs/                    escopo e evidências da Sprint 0
-```
-
-## Fora da Sprint 0
-
-Firebase, ilustrações, aplicativos móveis, monetização, eventos globais, vidas cruzadas e múltiplas profissões permanecem fora deste recorte.
+- O motor não depende de React, Next.js, Firebase ou DOM.
+- O relógio é parte da mecânica e permanece visível.
+- O conteúdo narrativo é validado antes da execução.
+- O save inicial usa IndexedDB, com contrato preparado para sincronização futura.
+- Rolagens são determinísticas por seed para permitir testes e auditoria.
