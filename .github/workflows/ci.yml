@@ -19,34 +19,105 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.12.1
-          run_install: false
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
 
+      - name: Prepare diagnostics
+        run: mkdir -p .ci-logs
+
+      - name: Install pnpm
+        id: setup_pnpm
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          npm install --global pnpm@10.12.1 2>&1 | tee .ci-logs/setup-pnpm.log
+
       - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+        id: install
+        if: steps.setup_pnpm.outcome == 'success'
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm install --no-frozen-lockfile 2>&1 | tee .ci-logs/install.log
 
       - name: Lint
-        run: pnpm lint
+        id: lint
+        if: steps.install.outcome == 'success'
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm lint 2>&1 | tee .ci-logs/lint.log
 
       - name: Typecheck
-        run: pnpm typecheck
+        id: typecheck
+        if: steps.install.outcome == 'success'
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm typecheck 2>&1 | tee .ci-logs/typecheck.log
 
       - name: Unit tests
-        run: pnpm test
+        id: tests
+        if: steps.install.outcome == 'success'
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm test 2>&1 | tee .ci-logs/tests.log
 
       - name: Build
-        run: pnpm build
+        id: build
+        if: steps.install.outcome == 'success'
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm build 2>&1 | tee .ci-logs/build.log
 
       - name: Sprint 0 audit
-        run: pnpm audit:sprint0
+        id: audit
+        if: steps.install.outcome == 'success'
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm audit:sprint0 2>&1 | tee .ci-logs/audit.log
+
+      - name: Upload validation logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: validation-logs
+          path: .ci-logs
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Enforce validation result
+        if: always()
+        env:
+          SETUP_PNPM: ${{ steps.setup_pnpm.outcome }}
+          INSTALL: ${{ steps.install.outcome }}
+          LINT: ${{ steps.lint.outcome }}
+          TYPECHECK: ${{ steps.typecheck.outcome }}
+          TESTS: ${{ steps.tests.outcome }}
+          BUILD: ${{ steps.build.outcome }}
+          AUDIT: ${{ steps.audit.outcome }}
+        run: |
+          printf 'setup_pnpm=%s\ninstall=%s\nlint=%s\ntypecheck=%s\ntests=%s\nbuild=%s\naudit=%s\n' \
+            "$SETUP_PNPM" "$INSTALL" "$LINT" "$TYPECHECK" "$TESTS" "$BUILD" "$AUDIT"
+          test "$SETUP_PNPM" = success
+          test "$INSTALL" = success
+          test "$LINT" = success
+          test "$TYPECHECK" = success
+          test "$TESTS" = success
+          test "$BUILD" = success
+          test "$AUDIT" = success
 
   e2e:
     runs-on: ubuntu-latest
@@ -57,16 +128,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.12.1
-          run_install: false
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
+
+      - name: Install pnpm
+        run: npm install --global pnpm@10.12.1
 
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
