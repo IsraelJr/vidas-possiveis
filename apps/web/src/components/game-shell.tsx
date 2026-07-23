@@ -6,6 +6,7 @@ import {
   formatDatePtBr,
   formatTime,
   getChoiceAvailability,
+  migrateGameState,
   minutesBetweenClocks,
   STAT_KEYS,
   type AppliedChange,
@@ -13,7 +14,9 @@ import {
   type GameClock,
   type GameState,
   type Origin,
+  type OutcomeTier,
   type PlayerProfile,
+  type RelationshipDimension,
   type StatKey
 } from "@vidas-possiveis/game-engine";
 import { getStoryNode } from "@vidas-possiveis/narrative";
@@ -21,10 +24,6 @@ import { IndexedDbSaveRepository } from "@vidas-possiveis/persistence";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 const SAVE_SLOT = "primary";
-const NEXT_COMMITMENT: Readonly<{ label: string; clock: GameClock }> = {
-  label: "Apresentação do trabalho",
-  clock: { date: "2026-02-17", minuteOfDay: 8 * 60 }
-};
 
 const LOCATION_LABELS: Record<GameState["location"], string> = {
   home: "Casa",
@@ -52,19 +51,61 @@ const STAT_LABELS: Record<StatKey, string> = {
   reputation: "Reputação"
 };
 
-const FLAG_LABELS: Record<string, string> = {
-  hasComputer: "Possui computador",
-  preparedAssignment: "Trabalho preparado"
+const RELATIONSHIP_LABELS: Record<RelationshipDimension, string> = {
+  trust: "Confiança",
+  affection: "Proximidade",
+  conflict: "Tensão"
 };
 
-const SAVE_STATUS_LABELS = {
-  idle: "Aguardando primeira alteração",
-  saving: "Salvando…",
-  saved: "Salvo",
-  error: "Falha ao salvar"
+const FLAG_LABELS: Record<string, string> = {
+  hasComputer: "Possui computador",
+  preparedAssignment: "Trabalho preparado",
+  promisedHelp: "Prometeu ajudar Bia",
+  sharedPlan: "Organizou o grupo",
+  removedBia: "Afastou Bia do trabalho",
+  rehearsedPresentation: "Ensaiou a apresentação",
+  restedBeforePresentation: "Descansou antes da apresentação",
+  improvisedNight: "Improvisou a preparação",
+  attendedTechCourse: "Participou do curso de tecnologia",
+  workedTemporaryJob: "Fez um trabalho temporário",
+  builtFirstProject: "Criou o primeiro projeto",
+  formationUniversity: "Escolheu a faculdade",
+  formationTechnical: "Escolheu um curso técnico",
+  formationOnlineWork: "Escolheu trabalhar e estudar online",
+  formationSelfStudy: "Escolheu trabalhar e estudar por conta própria"
+};
+
+const OUTCOME_LABELS: Record<OutcomeTier, { title: string; text: string }> = {
+  critical_failure: {
+    title: "A situação saiu do controle",
+    text: "Foi um momento difícil, com consequências maiores do que você esperava."
+  },
+  failure: {
+    title: "Não saiu como você esperava",
+    text: "Você encontrou dificuldades, mas a experiência mostrou o que precisa melhorar."
+  },
+  partial_success: {
+    title: "Você conseguiu, com alguns tropeços",
+    text: "O resultado foi suficiente para seguir em frente, embora nem tudo tenha funcionado."
+  },
+  success: {
+    title: "Você se saiu bem",
+    text: "Sua preparação e suas escolhas ajudaram a situação a terminar de forma positiva."
+  },
+  exceptional_success: {
+    title: "Você surpreendeu a todos",
+    text: "O resultado foi melhor do que o esperado e abriu novas possibilidades."
+  }
+};
+
+const PROGRESS_STATUS_LABELS = {
+  idle: "Ainda não há escolhas para guardar",
+  saving: "Guardando suas escolhas…",
+  saved: "Escolhas guardadas",
+  error: "Não foi possível guardar suas escolhas"
 } as const;
 
-type SaveStatus = keyof typeof SAVE_STATUS_LABELS;
+type ProgressStatus = keyof typeof PROGRESS_STATUS_LABELS;
 
 const MONEY_FORMATTER = new Intl.NumberFormat("pt-BR", {
   style: "currency",
@@ -92,31 +133,43 @@ function formatDuration(totalMinutes: number): string {
   return `${prefix}${parts.join(" ")}`;
 }
 
-function formatCondition(condition: Condition): string {
+function formatClock(clock: GameClock): string {
+  return `${formatDatePtBr(clock.date)} às ${formatTime(clock.minuteOfDay)}`;
+}
+
+function formatCondition(condition: Condition, state: GameState): string {
   switch (condition.type) {
     case "stat":
       return `${STAT_LABELS[condition.stat]} deve ser ${condition.operator} ${condition.value}`;
     case "flag":
-      return `${FLAG_LABELS[condition.flag] ?? condition.flag} deve ser ${condition.value ? "verdadeiro" : "falso"}`;
+      return `${FLAG_LABELS[condition.flag] ?? condition.flag} deve ser ${condition.value ? "sim" : "não"}`;
     case "money":
       return `Dinheiro deve ser ${condition.operator} ${formatMoney(condition.valueCents)}`;
     case "location":
       return `Local deve ser ${LOCATION_LABELS[condition.value]}`;
+    case "relationship":
+      return `${RELATIONSHIP_LABELS[condition.dimension]} com ${state.relationships[condition.relationshipId]?.name ?? condition.relationshipId} deve ser ${condition.operator} ${condition.value}`;
   }
 }
 
-function formatChange(change: AppliedChange): string {
+function formatChange(change: AppliedChange, state: GameState): string | null {
   switch (change.type) {
     case "stat":
       return `${STAT_LABELS[change.stat]}: ${change.before} → ${change.after}`;
     case "money":
       return `Dinheiro: ${formatMoney(change.beforeCents)} → ${formatMoney(change.afterCents)}`;
     case "flag":
-      return `${FLAG_LABELS[change.flag] ?? change.flag}: ${String(change.before)} → ${String(change.after)}`;
+      return `${FLAG_LABELS[change.flag] ?? change.flag}: ${change.after ? "Sim" : "Não"}`;
     case "clock":
-      return `Horário: ${formatTime(change.before.minuteOfDay)} → ${formatTime(change.after.minuteOfDay)}`;
+      return change.before.date === change.after.date
+        ? `Horário: ${formatTime(change.before.minuteOfDay)} → ${formatTime(change.after.minuteOfDay)}`
+        : `Tempo: ${formatClock(change.before)} → ${formatClock(change.after)}`;
     case "location":
       return `Local: ${LOCATION_LABELS[change.before]} → ${LOCATION_LABELS[change.after]}`;
+    case "relationship":
+      return `${RELATIONSHIP_LABELS[change.dimension]} com ${state.relationships[change.relationshipId]?.name ?? change.relationshipId}: ${change.before} → ${change.after}`;
+    case "scheduled_consequence":
+      return null;
   }
 }
 
@@ -125,7 +178,7 @@ export function GameShell() {
   const saveRevision = useRef(0);
   const [state, setState] = useState<GameState | null>(null);
   const [loading, setLoading] = useState(true);
-  const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
+  const [progressStatus, setProgressStatus] = useState<ProgressStatus>("idle");
   const [persistenceError, setPersistenceError] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [presentation, setPresentation] = useState<PlayerProfile["presentation"]>("man");
@@ -136,13 +189,13 @@ export function GameShell() {
 
     repository.load(SAVE_SLOT).then((saved) => {
       if (!active) return;
-      setState(saved);
-      setSaveStatus(saved ? "saved" : "idle");
+      setState(saved ? migrateGameState(saved) : null);
+      setProgressStatus(saved ? "saved" : "idle");
       setLoading(false);
     }).catch(() => {
       if (!active) return;
-      setSaveStatus("error");
-      setPersistenceError("Não foi possível carregar o save local. Você ainda pode iniciar uma nova vida.");
+      setProgressStatus("error");
+      setPersistenceError("Não foi possível recuperar suas escolhas anteriores. Você ainda pode começar uma nova vida.");
       setLoading(false);
     });
 
@@ -156,18 +209,18 @@ export function GameShell() {
 
     const revision = saveRevision.current + 1;
     saveRevision.current = revision;
-    setSaveStatus("saving");
+    setProgressStatus("saving");
 
     repository.save(SAVE_SLOT, state)
       .then(() => {
         if (revision !== saveRevision.current) return;
-        setSaveStatus("saved");
+        setProgressStatus("saved");
         setPersistenceError(null);
       })
       .catch(() => {
         if (revision !== saveRevision.current) return;
-        setSaveStatus("error");
-        setPersistenceError("O estado atual não pôde ser salvo neste dispositivo.");
+        setProgressStatus("error");
+        setPersistenceError("Suas escolhas mais recentes não puderam ser guardadas neste dispositivo.");
       });
   }, [repository, state]);
 
@@ -176,16 +229,16 @@ export function GameShell() {
     try {
       await repository.delete(SAVE_SLOT);
       setPersistenceError(null);
-      setSaveStatus("idle");
+      setProgressStatus("idle");
       setState(null);
     } catch {
-      setSaveStatus("error");
-      setPersistenceError("Não foi possível apagar o save local.");
+      setProgressStatus("error");
+      setPersistenceError("Não foi possível apagar a vida atual.");
     }
   }
 
   if (loading) {
-    return <main><div className="shell"><section className="panel">Carregando vida...</section></div></main>;
+    return <main><div className="shell"><section className="panel">Recuperando sua história…</section></div></main>;
   }
 
   if (!state) {
@@ -194,9 +247,9 @@ export function GameShell() {
         <div className="shell">
           {persistenceError ? <p className="alert" role="alert">{persistenceError}</p> : null}
           <section className="panel hero">
-            <p className="label">SPRINT 0 · VERTICAL SLICE TEXTUAL</p>
+            <p className="label">UMA VIDA COMEÇA</p>
             <h1>Vidas Possíveis</h1>
-            <p className="muted">Crie uma vida e enfrente a primeira decisão escolar. O horário e as consequências serão persistidos automaticamente.</p>
+            <p className="muted">Crie uma vida, faça escolhas e acompanhe como o tempo, as oportunidades e as relações mudam o caminho do personagem.</p>
           </section>
           <section className="panel">
             <h2>Nova vida</h2>
@@ -245,8 +298,13 @@ export function GameShell() {
   const choices = choiceAvailability.filter((item) => item.available).map((item) => item.choice);
   const blockedChoices = choiceAvailability.filter((item) => !item.available);
   const latestHistory = state.history.at(-1);
-  const minutesUntilCommitment = minutesBetweenClocks(state.clock, NEXT_COMMITMENT.clock);
-  const currentActivity = node.ending ? "Planejar o restante da noite" : "Organizar o trabalho escolar";
+  const commitment = node.nextCommitment;
+  const minutesUntilCommitment = commitment ? minutesBetweenClocks(state.clock, commitment.clock) : null;
+  const visibleChanges = latestHistory?.changes
+    .map((change) => formatChange(change, state))
+    .filter((change): change is string => change !== null) ?? [];
+  const triggeredConsequences = latestHistory?.triggeredConsequences ?? [];
+  const skillResult = latestHistory?.skillCheck ? OUTCOME_LABELS[latestHistory.skillCheck.outcome] : null;
 
   return (
     <main>
@@ -256,25 +314,25 @@ export function GameShell() {
           <div><span className="label">Data</span><strong>{formatDatePtBr(state.clock.date)}</strong></div>
           <div><span className="label">Horário</span><strong data-testid="current-time">{formatTime(state.clock.minuteOfDay)}</strong></div>
           <div><span className="label">Local</span><strong>{LOCATION_LABELS[state.location]}</strong></div>
-          <div><span className="label">Atividade atual</span><strong>{currentActivity}</strong></div>
+          <div><span className="label">Atividade atual</span><strong>{node.activity}</strong></div>
           <div>
             <span className="label">Próximo compromisso</span>
-            <strong>{NEXT_COMMITMENT.label} · {formatTime(NEXT_COMMITMENT.clock.minuteOfDay)}</strong>
+            <strong>{commitment ? `${commitment.label} · ${formatClock(commitment.clock)}` : "Nenhum compromisso marcado"}</strong>
           </div>
           <div>
             <span className="label">Tempo até compromisso</span>
-            <strong data-testid="time-until-commitment">{formatDuration(minutesUntilCommitment)}</strong>
+            <strong data-testid="time-until-commitment">{minutesUntilCommitment === null ? "Tempo livre" : formatDuration(minutesUntilCommitment)}</strong>
           </div>
         </header>
 
         <section className="panel hero">
           <p className="label">{state.player.name} · {ORIGIN_LABELS[state.player.origin]}</p>
-          <p className="save-status" data-testid="save-status" aria-live="polite">Save local: {SAVE_STATUS_LABELS[saveStatus]}</p>
+          <p className="save-status" data-testid="save-status" aria-live="polite">Progresso: {PROGRESS_STATUS_LABELS[progressStatus]}</p>
           <h1>{node.title}</h1>
           <p>{node.text}</p>
           {node.ending ? (
             <div>
-              <p><strong>Primeiro recorte concluído.</strong> O save foi registrado e o relógio reflete o tempo consumido.</p>
+              <p><strong>Esta etapa da sua história chegou ao fim.</strong> Suas escolhas abriram um caminho para os próximos anos.</p>
               <button className="primary" type="button" onClick={() => void resetLife()}>
                 Criar outra vida
               </button>
@@ -295,6 +353,31 @@ export function GameShell() {
           )}
         </section>
 
+        {skillResult ? (
+          <section className="panel result-card" data-testid="skill-result" aria-live="polite">
+            <p className="label">COMO A SITUAÇÃO TERMINOU</p>
+            <h2>{skillResult.title}</h2>
+            <p>{skillResult.text}</p>
+          </section>
+        ) : null}
+
+        {triggeredConsequences.map((consequence) => (
+          <section className="panel consequence-card" key={consequence.id} data-testid="triggered-consequence" aria-live="polite">
+            <p className="label">UMA ESCOLHA VOLTOU A TER EFEITO</p>
+            <h2>{consequence.title}</h2>
+            <p>{consequence.text}</p>
+          </section>
+        ))}
+
+        {visibleChanges.length > 0 ? (
+          <section className="panel" aria-live="polite">
+            <h2>O que mudou</h2>
+            <ul className="change-list">
+              {visibleChanges.map((change, index) => <li key={`${change}-${index}`}>{change}</li>)}
+            </ul>
+          </section>
+        ) : null}
+
         <section className="panel">
           <h2>Estado atual</h2>
           <div className="stats-grid">
@@ -305,40 +388,50 @@ export function GameShell() {
           </div>
         </section>
 
-        {latestHistory ? (
-          <section className="panel" aria-live="polite">
-            <h2>Consequências da última escolha</h2>
-            <ul className="change-list">
-              {latestHistory.changes.map((change, index) => <li key={`${change.type}-${index}`}>{formatChange(change)}</li>)}
-            </ul>
-          </section>
-        ) : null}
+        <section className="panel">
+          <h2>Pessoas importantes</h2>
+          <div className="relationship-grid">
+            {Object.values(state.relationships).map((relationship) => (
+              <article className="relationship" key={relationship.id}>
+                <h3>{relationship.name}</h3>
+                <p className="muted">Amiga da escola</p>
+                <div className="stat"><span>Confiança</span><strong>{relationship.trust}</strong></div>
+                <div className="stat"><span>Proximidade</span><strong>{relationship.affection}</strong></div>
+                <div className="stat"><span>Tensão</span><strong>{relationship.conflict}</strong></div>
+              </article>
+            ))}
+          </div>
+        </section>
 
         <details className="panel debug">
-          <summary>Painel de depuração</summary>
+          <summary>Detalhes de teste</summary>
           {blockedChoices.length > 0 ? (
             <div data-testid="blocked-choice-reasons">
-              <p><strong>Opções bloqueadas</strong></p>
+              <p><strong>Opções indisponíveis</strong></p>
               <ul>
                 {blockedChoices.map(({ choice, failedConditions }) => (
                   <li key={choice.id}>
-                    {choice.label}: {failedConditions.map(formatCondition).join("; ")}
+                    {choice.label}: {failedConditions.map((condition) => formatCondition(condition, state)).join("; ")}
                   </li>
                 ))}
               </ul>
             </div>
-          ) : <p>Nenhuma opção bloqueada neste nó.</p>}
+          ) : <p>Nenhuma opção indisponível neste momento.</p>}
           <pre>{JSON.stringify({
             nodeId: state.currentNodeId,
             seed: state.seed,
             contentVersion: state.contentVersion,
             schemaVersion: state.schemaVersion,
             clock: state.clock,
-            nextCommitment: NEXT_COMMITMENT,
+            nextCommitment: commitment,
             minutesUntilCommitment,
-            saveStatus,
+            progressStatus,
             saveRevision: saveRevision.current,
-            flags: state.flags
+            rollIndex: state.rollIndex,
+            flags: state.flags,
+            relationships: state.relationships,
+            scheduledConsequences: state.scheduledConsequences,
+            latestHistory
           }, null, 2)}</pre>
         </details>
       </div>
