@@ -1,12 +1,18 @@
-import { conditionsAreMet } from "./conditions";
+import { conditionsAreMet, evaluateCondition } from "./conditions";
 import { applyEffects } from "./effects";
 import { createInitialStats } from "./stats";
-import type { GameState, PlayerProfile, StoryChoice, StoryNode } from "./types";
+import type {
+  GameState,
+  PlayerProfile,
+  StoryChoice,
+  StoryChoiceAvailability,
+  StoryNode
+} from "./types";
 
 export function createGameState(player: PlayerProfile): GameState {
   return {
     schemaVersion: 1,
-    contentVersion: "sprint-0.1",
+    contentVersion: "sprint-0.2",
     player,
     clock: { date: "2026-02-16", minuteOfDay: 16 * 60 },
     location: "school",
@@ -23,8 +29,21 @@ export function createGameState(player: PlayerProfile): GameState {
   };
 }
 
+export function getChoiceAvailability(state: GameState, node: StoryNode): readonly StoryChoiceAvailability[] {
+  return node.choices.map((choice) => {
+    const failedConditions = choice.conditions.filter((condition) => !evaluateCondition(state, condition));
+    return {
+      choice,
+      available: failedConditions.length === 0,
+      failedConditions
+    };
+  });
+}
+
 export function getAvailableChoices(state: GameState, node: StoryNode): readonly StoryChoice[] {
-  return node.choices.filter((choice) => conditionsAreMet(state, choice.conditions));
+  return getChoiceAvailability(state, node)
+    .filter((availability) => availability.available)
+    .map((availability) => availability.choice);
 }
 
 export function chooseStoryOption(state: GameState, node: StoryNode, choiceId: string): GameState {
