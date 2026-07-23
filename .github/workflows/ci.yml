@@ -54,7 +54,20 @@ jobs:
         run: pnpm install --no-frozen-lockfile --prefer-offline
 
       - name: Lint
-        run: pnpm lint
+        id: lint
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm lint 2>&1 | tee lint.log
+
+      - name: Upload lint diagnostics
+        if: failure() && steps.lint.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: lint-diagnostics
+          path: lint.log
+          retention-days: 1
+          if-no-files-found: error
 
       - name: Typecheck
         run: pnpm typecheck
