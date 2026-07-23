@@ -14,7 +14,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -59,6 +59,28 @@ jobs:
           set -o pipefail
           pnpm install --no-frozen-lockfile --prefer-offline 2>&1 | tee ci-diagnostics/install.log
           cp pnpm-lock.yaml ci-diagnostics/pnpm-lock.yaml
+
+      - name: Bootstrap lockfile on the pull request branch
+        if: github.event_name == 'pull_request'
+        shell: bash
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          set -euo pipefail
+          git fetch origin "${HEAD_REF}:refs/remotes/origin/${HEAD_REF}"
+          if git ls-tree -r --name-only "origin/${HEAD_REF}" | grep -Fxq "pnpm-lock.yaml"; then
+            echo "pnpm-lock.yaml já está versionado."
+            exit 0
+          fi
+
+          worktree=$(mktemp -d)
+          git worktree add --detach "$worktree" "origin/${HEAD_REF}"
+          cp pnpm-lock.yaml "$worktree/pnpm-lock.yaml"
+          git -C "$worktree" config user.name "github-actions[bot]"
+          git -C "$worktree" config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git -C "$worktree" add pnpm-lock.yaml
+          git -C "$worktree" commit -m "chore: version pnpm lockfile"
+          git -C "$worktree" push origin "HEAD:${HEAD_REF}"
 
       - name: Lint
         shell: bash
