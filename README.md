@@ -1,6 +1,6 @@
 # Vidas Possíveis
 
-RPG narrativo de vida e carreira. A Sprint 0 entrega a fundação técnica do MVP textual com motor independente, relógio explícito, primeira cena jogável, persistência local e testes automatizados.
+RPG narrativo de vida e carreira. A Sprint 0 concluiu a fundação técnica do MVP textual com motor independente, relógio explícito, primeira cena jogável, persistência local e testes automatizados.
 
 ## Stack
 
@@ -25,7 +25,7 @@ docs                     Referência canônica, políticas e auditorias
 
 ```bash
 corepack enable
-pnpm install
+pnpm install --frozen-lockfile
 pnpm dev
 ```
 
@@ -43,7 +43,7 @@ pnpm audit:actions
 pnpm test:e2e
 ```
 
-A CI executa essas verificações uma vez por pull request e em `main`, com cancelamento de execuções substituídas e sem cron ou retries baseados em commits.
+A CI executa essas verificações uma vez por pull request e na `main`, com cancelamento de execuções substituídas, instalação congelada e sem cron ou retries baseados em commits.
 
 ## Entrega funcional da Sprint 0
 
@@ -56,6 +56,7 @@ A CI executa essas verificações uma vez por pull request e em `main`, com canc
 - save automático observável e gravações serializadas no IndexedDB;
 - restauração da vida após recarregar a página;
 - rolagens determinísticas por seed;
+- lockfile versionado;
 - auditoria estrutural e política econômica de GitHub Actions.
 
 ## Decisões arquiteturais
@@ -66,7 +67,12 @@ A CI executa essas verificações uma vez por pull request e em `main`, com canc
 - O save inicial usa IndexedDB, com contrato preparado para sincronização futura.
 - As gravações locais são executadas em ordem para impedir que um estado antigo substitua uma decisão recente.
 - Rolagens são determinísticas por seed para permitir testes e auditoria.
+- A CI usa permissões somente de leitura e gera diagnóstico apenas em falhas.
 
-## Estado de validação
+## Estado
 
-O motor e a fila de persistência foram compilados e testados localmente com TypeScript estrito. A execução integral de instalação, build Next.js, Vitest e Playwright no GitHub permanece pendente enquanto a conta não dispõe de minutos de GitHub Actions para repositórios privados.
+**Sprint 0 concluída e integrada à `main` em 23/07/2026.**
+
+A execução definitiva `29978807024` aprovou instalação congelada, lint, typecheck, 18 testes unitários e de integridade, build Next.js, duas auditorias, instalação do Chromium e a jornada E2E completa.
+
+Próxima etapa: Sprint 1 — ampliar o vertical slice narrativo do prólogo escolar.
