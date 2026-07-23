@@ -1,29 +1,4 @@
-export type OutcomeTier =
-  | "critical_failure"
-  | "failure"
-  | "partial_success"
-  | "success"
-  | "exceptional_success";
-
-export interface SkillModifier {
-  readonly label: string;
-  readonly value: number;
-}
-
-export interface SkillCheckInput {
-  readonly seed: string;
-  readonly eventId: string;
-  readonly rollIndex: number;
-  readonly difficulty: number;
-  readonly modifiers: readonly SkillModifier[];
-}
-
-export interface SkillCheckResult {
-  readonly roll: number;
-  readonly modifierTotal: number;
-  readonly score: number;
-  readonly outcome: OutcomeTier;
-}
+import type { OutcomeTier, SkillCheckInput, SkillCheckResult } from "./types";
 
 function hash(input: string): number {
   let value = 2166136261;
@@ -59,10 +34,5 @@ export function runSkillCheck(input: SkillCheckInput): SkillCheckResult {
   const modifierTotal = input.modifiers.reduce((sum, modifier) => sum + modifier.value, 0);
   const score = Math.max(1, Math.min(100, roll + modifierTotal - input.difficulty + 50));
 
-  return {
-    roll,
-    modifierTotal,
-    score,
-    outcome: resolveOutcome(score)
-  };
+  return { roll, modifierTotal, score, outcome: resolveOutcome(score) };
 }
