@@ -18,7 +18,7 @@ import {
 } from "@vidas-possiveis/game-engine";
 import { getStoryNode } from "@vidas-possiveis/narrative";
 import { IndexedDbSaveRepository } from "@vidas-possiveis/persistence";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 const SAVE_SLOT = "primary";
 const NEXT_COMMITMENT: Readonly<{ label: string; clock: GameClock }> = {
@@ -122,6 +122,7 @@ function formatChange(change: AppliedChange): string {
 
 export function GameShell() {
   const repository = useMemo(() => new IndexedDbSaveRepository(), []);
+  const saveRevision = useRef(0);
   const [state, setState] = useState<GameState | null>(null);
   const [loading, setLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
@@ -152,19 +153,26 @@ export function GameShell() {
 
   useEffect(() => {
     if (!state) return;
+
+    const revision = saveRevision.current + 1;
+    saveRevision.current = revision;
     setSaveStatus("saving");
+
     repository.save(SAVE_SLOT, state)
       .then(() => {
+        if (revision !== saveRevision.current) return;
         setSaveStatus("saved");
         setPersistenceError(null);
       })
       .catch(() => {
+        if (revision !== saveRevision.current) return;
         setSaveStatus("error");
         setPersistenceError("O estado atual não pôde ser salvo neste dispositivo.");
       });
   }, [repository, state]);
 
   async function resetLife(): Promise<void> {
+    saveRevision.current += 1;
     try {
       await repository.delete(SAVE_SLOT);
       setPersistenceError(null);
@@ -329,6 +337,7 @@ export function GameShell() {
             nextCommitment: NEXT_COMMITMENT,
             minutesUntilCommitment,
             saveStatus,
+            saveRevision: saveRevision.current,
             flags: state.flags
           }, null, 2)}</pre>
         </details>
