@@ -18,6 +18,7 @@
     "audit:actions": "node scripts/audit-actions-usage.mjs"
   },
   "devDependencies": {
+    "@eslint/eslintrc": "^3.3.1",
     "@types/node": "^22.15.30",
     "eslint": "^9.35.0",
     "eslint-config-next": "^15.5.0",
