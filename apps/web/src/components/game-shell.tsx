@@ -57,6 +57,15 @@ const FLAG_LABELS: Record<string, string> = {
   preparedAssignment: "Trabalho preparado"
 };
 
+const SAVE_STATUS_LABELS = {
+  idle: "Aguardando primeira alteração",
+  saving: "Salvando…",
+  saved: "Salvo",
+  error: "Falha ao salvar"
+} as const;
+
+type SaveStatus = keyof typeof SAVE_STATUS_LABELS;
+
 const MONEY_FORMATTER = new Intl.NumberFormat("pt-BR", {
   style: "currency",
   currency: "BRL"
@@ -115,6 +124,7 @@ export function GameShell() {
   const repository = useMemo(() => new IndexedDbSaveRepository(), []);
   const [state, setState] = useState<GameState | null>(null);
   const [loading, setLoading] = useState(true);
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [persistenceError, setPersistenceError] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [presentation, setPresentation] = useState<PlayerProfile["presentation"]>("man");
@@ -126,9 +136,11 @@ export function GameShell() {
     repository.load(SAVE_SLOT).then((saved) => {
       if (!active) return;
       setState(saved);
+      setSaveStatus(saved ? "saved" : "idle");
       setLoading(false);
     }).catch(() => {
       if (!active) return;
+      setSaveStatus("error");
       setPersistenceError("Não foi possível carregar o save local. Você ainda pode iniciar uma nova vida.");
       setLoading(false);
     });
@@ -140,17 +152,26 @@ export function GameShell() {
 
   useEffect(() => {
     if (!state) return;
+    setSaveStatus("saving");
     repository.save(SAVE_SLOT, state)
-      .then(() => setPersistenceError(null))
-      .catch(() => setPersistenceError("O estado atual não pôde ser salvo neste dispositivo."));
+      .then(() => {
+        setSaveStatus("saved");
+        setPersistenceError(null);
+      })
+      .catch(() => {
+        setSaveStatus("error");
+        setPersistenceError("O estado atual não pôde ser salvo neste dispositivo.");
+      });
   }, [repository, state]);
 
   async function resetLife(): Promise<void> {
     try {
       await repository.delete(SAVE_SLOT);
       setPersistenceError(null);
+      setSaveStatus("idle");
       setState(null);
     } catch {
+      setSaveStatus("error");
       setPersistenceError("Não foi possível apagar o save local.");
     }
   }
@@ -240,6 +261,7 @@ export function GameShell() {
 
         <section className="panel hero">
           <p className="label">{state.player.name} · {ORIGIN_LABELS[state.player.origin]}</p>
+          <p className="save-status" data-testid="save-status" aria-live="polite">Save local: {SAVE_STATUS_LABELS[saveStatus]}</p>
           <h1>{node.title}</h1>
           <p>{node.text}</p>
           {node.ending ? (
@@ -306,6 +328,7 @@ export function GameShell() {
             clock: state.clock,
             nextCommitment: NEXT_COMMITMENT,
             minutesUntilCommitment,
+            saveStatus,
             flags: state.flags
           }, null, 2)}</pre>
         </details>
