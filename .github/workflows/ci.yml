@@ -50,42 +50,69 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pnpm-
 
-      - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile --prefer-offline
+      - name: Initialize diagnostics
+        run: mkdir -p .ci-diagnostics
 
-      - name: Lint
-        id: lint
+      - name: Install dependencies
         shell: bash
         run: |
           set -o pipefail
-          pnpm lint 2>&1 | tee lint.log
+          pnpm install --no-frozen-lockfile --prefer-offline 2>&1 | tee .ci-diagnostics/install.log
+          cp pnpm-lock.yaml .ci-diagnostics/pnpm-lock.yaml
 
-      - name: Upload lint diagnostics
-        if: failure() && steps.lint.outcome == 'failure'
-        uses: actions/upload-artifact@v4
-        with:
-          name: lint-diagnostics
-          path: lint.log
-          retention-days: 1
-          if-no-files-found: error
+      - name: Lint
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm lint 2>&1 | tee .ci-diagnostics/lint.log
 
       - name: Typecheck
-        run: pnpm typecheck
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm typecheck 2>&1 | tee .ci-diagnostics/typecheck.log
 
       - name: Unit tests
-        run: pnpm test
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm test 2>&1 | tee .ci-diagnostics/unit-tests.log
 
       - name: Build
-        run: pnpm build
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm build 2>&1 | tee .ci-diagnostics/build.log
 
       - name: Sprint 0 audit
-        run: pnpm audit:sprint0
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm audit:sprint0 2>&1 | tee .ci-diagnostics/sprint-0-audit.log
 
       - name: GitHub Actions usage audit
-        run: pnpm audit:actions
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm audit:actions 2>&1 | tee .ci-diagnostics/actions-audit.log
 
       - name: Install Chromium
-        run: pnpm --filter @vidas-possiveis/web exec playwright install --with-deps chromium
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm --filter @vidas-possiveis/web exec playwright install --with-deps chromium 2>&1 | tee .ci-diagnostics/chromium-install.log
 
       - name: End-to-end tests
-        run: pnpm test:e2e
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm test:e2e 2>&1 | tee .ci-diagnostics/e2e.log
+
+      - name: Upload failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-failure-diagnostics
+          path: .ci-diagnostics/
+          retention-days: 1
+          if-no-files-found: error
