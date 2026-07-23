@@ -70,6 +70,11 @@ main {
 
 .hero h1, .panel h2 { margin-top: 0; }
 .muted { color: var(--muted); }
+.save-status {
+  margin: 0 0 16px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
 
 .form-grid, .stats-grid {
   display: grid;
