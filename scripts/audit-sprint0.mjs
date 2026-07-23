@@ -11,6 +11,8 @@ const requiredFiles = [
   "packages/game-engine/src/skill-check.ts",
   "packages/narrative/src/content.ts",
   "packages/persistence/src/indexed-db-save-repository.ts",
+  "packages/persistence/src/serial-operation-queue.ts",
+  "packages/persistence/tests/serial-operation-queue.test.ts",
   ".github/workflows/ci.yml",
   "docs/HANDOFF_REFERENCE.md",
   "docs/GITHUB_ACTIONS_POLICY.md",
@@ -53,6 +55,16 @@ for (const marker of ["getChoiceAvailability", "failedConditions", "chooseStoryO
   if (!game.includes(marker)) failures.push(`Motor narrativo não contém: ${marker}`);
 }
 
+const persistence = await readFile("packages/persistence/src/indexed-db-save-repository.ts", "utf8");
+for (const marker of ["SerialOperationQueue", "#operations.enqueue", "database.put", "database.delete"]) {
+  if (!persistence.includes(marker)) failures.push(`Persistência ordenada não contém: ${marker}`);
+}
+
+const persistenceTest = await readFile("packages/persistence/tests/serial-operation-queue.test.ts", "utf8");
+for (const marker of ["ordem em que foram enfileiradas", "operação rejeitada"]) {
+  if (!persistenceTest.includes(marker)) failures.push(`Teste da fila de persistência não cobre: ${marker}`);
+}
+
 const e2e = await readFile("apps/web/tests/e2e/game.spec.ts", "utf8");
 for (const marker of [
   "Tempo até compromisso",
@@ -86,4 +98,4 @@ if (failures.length > 0) {
 
 console.log("Auditoria da Sprint 0 aprovada.");
 console.log(`Arquivos obrigatórios verificados: ${requiredFiles.length}`);
-console.log("Relógio completo, bloqueios auditáveis, save observável e retomada E2E verificados.");
+console.log("Relógio completo, bloqueios auditáveis, save ordenado e retomada E2E verificados.");
