@@ -10,7 +10,9 @@ const requiredFiles = [
   "packages/narrative/src/content.ts",
   "packages/persistence/src/indexed-db-save-repository.ts",
   ".github/workflows/ci.yml",
-  "docs/HANDOFF_REFERENCE.md"
+  "docs/HANDOFF_REFERENCE.md",
+  "docs/GITHUB_ACTIONS_POLICY.md",
+  "scripts/audit-actions-usage.mjs"
 ];
 
 const failures = [];
@@ -31,7 +33,15 @@ for (const marker of ['data-testid="game-clock"', "Próximo compromisso", "Local
 }
 
 const workflow = await readFile(".github/workflows/ci.yml", "utf8");
-for (const command of ["pnpm lint", "pnpm typecheck", "pnpm test", "pnpm build", "pnpm test:e2e"]) {
+for (const command of [
+  "pnpm lint",
+  "pnpm typecheck",
+  "pnpm test",
+  "pnpm build",
+  "pnpm audit:sprint0",
+  "pnpm audit:actions",
+  "pnpm test:e2e"
+]) {
   if (!workflow.includes(command)) {
     failures.push(`CI não executa: ${command}`);
   }
