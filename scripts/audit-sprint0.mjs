@@ -74,7 +74,7 @@ if (!vitestConfig.includes('"tests/e2e/**"')) {
 
 const e2e = await readFile("apps/web/tests/e2e/game.spec.ts", "utf8");
 for (const marker of [
-  "Tempo até compromisso",
+  "time-until-commitment",
   "Possui computador deve ser sim",
   "page.reload()",
   "save-status"
