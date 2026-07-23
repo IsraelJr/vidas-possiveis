@@ -1,6 +1,6 @@
 # Vidas Possíveis
 
-RPG narrativo de vida e carreira. A Sprint 0 concluiu a fundação técnica do MVP textual com motor independente, relógio explícito, primeira cena jogável, persistência local e testes automatizados.
+RPG narrativo de vida e carreira. As Sprints 0 e 1 entregam a fundação técnica e um prólogo escolar completo, com escolhas condicionais, relações, passagem do tempo, consequências futuras e quatro primeiros caminhos de formação.
 
 ## Stack
 
@@ -17,7 +17,7 @@ RPG narrativo de vida e carreira. A Sprint 0 concluiu a fundação técnica do M
 apps/web                 Interface Next.js
 packages/game-engine     Regras puras do domínio
 packages/narrative       Conteúdo e validação narrativa
-packages/persistence     Save local e contratos de persistência
+packages/persistence     Progresso local e contratos de persistência
 docs                     Referência canônica, políticas e auditorias
 ```
 
@@ -39,40 +39,44 @@ pnpm typecheck
 pnpm test
 pnpm build
 pnpm audit:sprint0
+pnpm audit:sprint1
 pnpm audit:actions
 pnpm test:e2e
 ```
 
-A CI executa essas verificações uma vez por pull request e na `main`, com cancelamento de execuções substituídas, instalação congelada e sem cron ou retries baseados em commits.
+A CI executa essas verificações uma vez por pull request e na `main`, com cancelamento de execuções substituídas, instalação congelada e sem cron ou tentativas baseadas em commits.
 
-## Entrega funcional da Sprint 0
+## Entrega funcional atual
 
-- criação básica da vida e três origens socioeconômicas;
-- primeira decisão escolar contextualizada;
-- relógio persistente com data, horário, local, atividade atual, próximo compromisso e tempo restante;
+- criação da vida com três origens socioeconômicas;
+- sequência de 15 cenas escolares;
+- relógio com data, horário, local, atividade, compromisso e tempo restante;
+- acesso desigual a recursos sem atribuir inteligência à origem;
+- conflito e relação persistente com Bia;
+- confiança, proximidade e tensão;
+- preparação, descanso e deslocamento antes da apresentação;
+- teste de habilidade determinístico que altera a história;
+- consequência futura de uma escolha;
 - atributos, dinheiro, flags e efeitos imutáveis;
-- opções condicionais com motivo de bloqueio no painel técnico;
-- consequências visíveis da última escolha;
-- save automático observável e gravações serializadas no IndexedDB;
-- restauração da vida após recarregar a página;
-- rolagens determinísticas por seed;
-- lockfile versionado;
-- auditoria estrutural e política econômica de GitHub Actions.
+- quatro caminhos iniciais de formação;
+- progresso automático e retomada após recarregar;
+- migração do progresso criado na Sprint 0;
+- linguagem voltada ao jogador, sem termos de desenvolvimento.
 
 ## Decisões arquiteturais
 
 - O motor não depende de React, Next.js, Firebase ou DOM.
 - O relógio é parte da mecânica e permanece visível.
 - O conteúdo narrativo é validado antes da execução.
-- O save inicial usa IndexedDB, com contrato preparado para sincronização futura.
+- O progresso inicial usa IndexedDB, com contrato preparado para sincronização futura.
 - As gravações locais são executadas em ordem para impedir que um estado antigo substitua uma decisão recente.
 - Rolagens são determinísticas por seed para permitir testes e auditoria.
 - A CI usa permissões somente de leitura e gera diagnóstico apenas em falhas.
 
 ## Estado
 
-**Sprint 0 concluída e integrada à `main` em 23/07/2026.**
+**Sprint 1 concluída e integrada à `main` em 23/07/2026.**
 
-A execução definitiva `29978807024` aprovou instalação congelada, lint, typecheck, 18 testes unitários e de integridade, build Next.js, duas auditorias, instalação do Chromium e a jornada E2E completa.
+A execução `30015682906` aprovou instalação congelada, lint, typecheck, 26 testes unitários e de integridade, build Next.js, três auditorias, instalação do Chromium e a jornada E2E completa.
 
-Próxima etapa: Sprint 1 — ampliar o vertical slice narrativo do prólogo escolar.
+Próxima etapa recomendada: Sprint 2 — desenvolver os diferentes caminhos de formação e fazê-los convergir para a primeira oportunidade em tecnologia.
