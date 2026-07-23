@@ -2,9 +2,11 @@ import { access, readFile } from "node:fs/promises";
 import { constants } from "node:fs";
 
 const requiredFiles = [
+  "pnpm-lock.yaml",
   "apps/web/src/app/page.tsx",
   "apps/web/src/components/game-shell.tsx",
   "apps/web/tests/e2e/game.spec.ts",
+  "apps/web/vitest.config.ts",
   "packages/game-engine/src/clock.ts",
   "packages/game-engine/src/effects.ts",
   "packages/game-engine/src/game.ts",
@@ -65,6 +67,11 @@ for (const marker of ["ordem em que foram enfileiradas", "operação rejeitada"]
   if (!persistenceTest.includes(marker)) failures.push(`Teste da fila de persistência não cobre: ${marker}`);
 }
 
+const vitestConfig = await readFile("apps/web/vitest.config.ts", "utf8");
+if (!vitestConfig.includes('"tests/e2e/**"')) {
+  failures.push("Vitest deve excluir a suíte E2E do Playwright.");
+}
+
 const e2e = await readFile("apps/web/tests/e2e/game.spec.ts", "utf8");
 for (const marker of [
   "Tempo até compromisso",
@@ -77,6 +84,7 @@ for (const marker of [
 
 const workflow = await readFile(".github/workflows/ci.yml", "utf8");
 for (const command of [
+  "pnpm install --frozen-lockfile",
   "pnpm lint",
   "pnpm typecheck",
   "pnpm test",
@@ -98,4 +106,4 @@ if (failures.length > 0) {
 
 console.log("Auditoria da Sprint 0 aprovada.");
 console.log(`Arquivos obrigatórios verificados: ${requiredFiles.length}`);
-console.log("Relógio completo, bloqueios auditáveis, save ordenado e retomada E2E verificados.");
+console.log("Relógio completo, bloqueios auditáveis, save ordenado, lockfile e retomada E2E verificados.");
