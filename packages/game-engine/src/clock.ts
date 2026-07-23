@@ -1,6 +1,7 @@
 import type { GameClock } from "./types";
 
 const MINUTES_PER_DAY = 24 * 60;
+const MILLISECONDS_PER_MINUTE = 60_000;
 
 function parseDate(date: string): Date {
   const parsed = new Date(`${date}T00:00:00.000Z`);
@@ -10,6 +11,11 @@ function parseDate(date: string): Date {
 
 function formatIsoDate(date: Date): string {
   return date.toISOString().slice(0, 10);
+}
+
+function toEpochMinutes(clock: GameClock): number {
+  assertValidClock(clock);
+  return Math.trunc(parseDate(clock.date).getTime() / MILLISECONDS_PER_MINUTE) + clock.minuteOfDay;
 }
 
 export function assertValidClock(clock: GameClock): void {
@@ -34,12 +40,12 @@ export function advanceClock(clock: GameClock, minutes: number): GameClock {
   };
 }
 
+export function minutesBetweenClocks(from: GameClock, to: GameClock): number {
+  return toEpochMinutes(to) - toEpochMinutes(from);
+}
+
 export function compareClocks(left: GameClock, right: GameClock): number {
-  assertValidClock(left);
-  assertValidClock(right);
-  const leftMs = parseDate(left.date).getTime() + left.minuteOfDay * 60_000;
-  const rightMs = parseDate(right.date).getTime() + right.minuteOfDay * 60_000;
-  return Math.sign(leftMs - rightMs);
+  return Math.sign(minutesBetweenClocks(right, left));
 }
 
 export function formatTime(minuteOfDay: number): string {
