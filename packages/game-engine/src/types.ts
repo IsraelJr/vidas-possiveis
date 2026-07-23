@@ -149,6 +149,12 @@ export interface StoryChoice {
   readonly nextNodeId: string;
 }
 
+export interface StoryChoiceAvailability {
+  readonly choice: StoryChoice;
+  readonly available: boolean;
+  readonly failedConditions: readonly Condition[];
+}
+
 export interface StoryNode {
   readonly id: string;
   readonly title: string;
