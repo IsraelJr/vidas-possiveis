@@ -31,8 +31,8 @@ for (const workflowFile of workflowFiles) {
     }
   }
 
-  if (/\bgit\s+push\b[^\n]*(?:HEAD:)?main\b/.test(source)) {
-    failures.push(`${label}: workflow não pode fazer push automático em main.`);
+  if (/\bgit\s+push\b/.test(source)) {
+    failures.push(`${label}: workflow não pode criar commits ou pushes automáticos.`);
   }
 
   if (/^\s*schedule:\s*$/m.test(source) || /^\s*-?\s*cron:\s*/m.test(source)) {
@@ -42,6 +42,13 @@ for (const workflowFile of workflowFiles) {
   const installs = source.match(/pnpm install/g)?.length ?? 0;
   if (installs > 1) {
     failures.push(`${label}: pnpm install aparece ${installs} vezes; reutilize uma única instalação por execução.`);
+  }
+
+  for (const match of source.matchAll(/retention-days:\s*(\d+)/g)) {
+    const retentionDays = Number(match[1]);
+    if (retentionDays > 7) {
+      failures.push(`${label}: retenção de ${retentionDays} dias excede o padrão econômico de 7 dias.`);
+    }
   }
 }
 
@@ -55,6 +62,9 @@ const requiredMarkers = [
   "- main",
   '"docs/**"',
   '"**/*.md"',
+  "contents: read",
+  "hashFiles('pnpm-lock.yaml')",
+  "pnpm install --frozen-lockfile",
   "pnpm audit:actions"
 ];
 
@@ -62,6 +72,14 @@ for (const marker of requiredMarkers) {
   if (!ci.includes(marker)) {
     failures.push(`ci.yml não contém o controle obrigatório: ${marker}`);
   }
+}
+
+if (/--no-frozen-lockfile/.test(ci)) {
+  failures.push("ci.yml não pode instalar dependências sem respeitar o lockfile.");
+}
+
+if (/contents:\s*write/.test(ci)) {
+  failures.push("ci.yml deve operar com permissão de conteúdo somente leitura.");
 }
 
 if (/agent\/\*\*/.test(ci)) {
@@ -76,3 +94,4 @@ if (failures.length > 0) {
 
 console.log("Auditoria de consumo do GitHub Actions aprovada.");
 console.log(`Workflows verificados: ${workflowFiles.length}`);
+console.log("CI somente leitura, reproduzível e sem gatilhos operacionais inadequados.");
