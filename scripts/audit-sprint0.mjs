@@ -75,7 +75,7 @@ if (!vitestConfig.includes('"tests/e2e/**"')) {
 const e2e = await readFile("apps/web/tests/e2e/game.spec.ts", "utf8");
 for (const marker of [
   "Tempo até compromisso",
-  "Possui computador deve ser verdadeiro",
+  "Possui computador deve ser sim",
   "page.reload()",
   "save-status"
 ]) {
@@ -90,6 +90,7 @@ for (const command of [
   "pnpm test",
   "pnpm build",
   "pnpm audit:sprint0",
+  "pnpm audit:sprint1",
   "pnpm audit:actions",
   "pnpm test:e2e"
 ]) {
