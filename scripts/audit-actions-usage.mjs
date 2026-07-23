@@ -65,6 +65,7 @@ const requiredMarkers = [
   "contents: read",
   "hashFiles('pnpm-lock.yaml')",
   "pnpm install --frozen-lockfile",
+  "pnpm audit:sprint1",
   "pnpm audit:actions"
 ];
 

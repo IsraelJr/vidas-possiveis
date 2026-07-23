@@ -89,6 +89,12 @@ jobs:
           set -o pipefail
           pnpm audit:sprint0 2>&1 | tee ci-diagnostics/sprint-0-audit.log
 
+      - name: Sprint 1 audit
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm audit:sprint1 2>&1 | tee ci-diagnostics/sprint-1-audit.log
+
       - name: GitHub Actions usage audit
         shell: bash
         run: |

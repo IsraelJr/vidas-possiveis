@@ -20,6 +20,12 @@ export function evaluateCondition(state: GameState, condition: Condition): boole
       return compare(state.moneyCents, condition.operator, condition.valueCents);
     case "location":
       return state.location === condition.value;
+    case "relationship": {
+      const relationship = state.relationships[condition.relationshipId];
+      return relationship
+        ? compare(relationship[condition.dimension], condition.operator, condition.value)
+        : false;
+    }
   }
 }
 

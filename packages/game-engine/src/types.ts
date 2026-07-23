@@ -34,34 +34,43 @@ export interface PlayerProfile {
   readonly origin: Origin;
 }
 
-export interface ScheduledConsequence {
+export const RELATIONSHIP_DIMENSIONS = ["trust", "affection", "conflict"] as const;
+export type RelationshipDimension = (typeof RELATIONSHIP_DIMENSIONS)[number];
+
+export interface RelationshipState {
   readonly id: string;
-  readonly sourceChoiceId: string;
-  readonly triggerAt: GameClock;
-  readonly effects: readonly Effect[];
+  readonly name: string;
+  readonly role: "friend" | "family" | "teacher" | "partner";
+  readonly trust: number;
+  readonly affection: number;
+  readonly conflict: number;
 }
 
-export interface DecisionHistoryEntry {
-  readonly nodeId: string;
-  readonly choiceId: string;
-  readonly decidedAt: GameClock;
-  readonly changes: readonly AppliedChange[];
+export type OutcomeTier =
+  | "critical_failure"
+  | "failure"
+  | "partial_success"
+  | "success"
+  | "exceptional_success";
+
+export interface SkillModifier {
+  readonly label: string;
+  readonly value: number;
 }
 
-export interface GameState {
-  readonly schemaVersion: 1;
-  readonly contentVersion: string;
-  readonly player: PlayerProfile;
-  readonly clock: GameClock;
-  readonly location: LocationId;
-  readonly currentNodeId: string;
-  readonly stats: Stats;
-  readonly moneyCents: number;
-  readonly flags: Readonly<Record<string, boolean>>;
-  readonly rollIndex: number;
+export interface SkillCheckInput {
   readonly seed: string;
-  readonly history: readonly DecisionHistoryEntry[];
-  readonly scheduledConsequences: readonly ScheduledConsequence[];
+  readonly eventId: string;
+  readonly rollIndex: number;
+  readonly difficulty: number;
+  readonly modifiers: readonly SkillModifier[];
+}
+
+export interface SkillCheckResult {
+  readonly roll: number;
+  readonly modifierTotal: number;
+  readonly score: number;
+  readonly outcome: OutcomeTier;
 }
 
 export type ComparisonOperator = ">=" | "<=" | ">" | "<" | "==";
@@ -86,9 +95,16 @@ export type Condition =
   | {
       readonly type: "location";
       readonly value: LocationId;
+    }
+  | {
+      readonly type: "relationship";
+      readonly relationshipId: string;
+      readonly dimension: RelationshipDimension;
+      readonly operator: ComparisonOperator;
+      readonly value: number;
     };
 
-export type Effect =
+export type ImmediateEffect =
   | {
       readonly type: "stat";
       readonly stat: StatKey;
@@ -108,9 +124,39 @@ export type Effect =
       readonly minutes: number;
     }
   | {
+      readonly type: "set_clock";
+      readonly clock: GameClock;
+    }
+  | {
       readonly type: "set_location";
       readonly location: LocationId;
+    }
+  | {
+      readonly type: "relationship";
+      readonly relationshipId: string;
+      readonly dimension: RelationshipDimension;
+      readonly delta: number;
     };
+
+export interface ScheduleConsequenceEffect {
+  readonly type: "schedule_consequence";
+  readonly consequenceId: string;
+  readonly delayMinutes: number;
+  readonly title: string;
+  readonly text: string;
+  readonly effects: readonly ImmediateEffect[];
+}
+
+export type Effect = ImmediateEffect | ScheduleConsequenceEffect;
+
+export interface ScheduledConsequence {
+  readonly id: string;
+  readonly sourceChoiceId: string;
+  readonly title: string;
+  readonly text: string;
+  readonly triggerAt: GameClock;
+  readonly effects: readonly ImmediateEffect[];
+}
 
 export type AppliedChange =
   | {
@@ -139,7 +185,71 @@ export type AppliedChange =
       readonly type: "location";
       readonly before: LocationId;
       readonly after: LocationId;
+    }
+  | {
+      readonly type: "relationship";
+      readonly relationshipId: string;
+      readonly dimension: RelationshipDimension;
+      readonly before: number;
+      readonly after: number;
+    }
+  | {
+      readonly type: "scheduled_consequence";
+      readonly consequenceId: string;
+      readonly triggerAt: GameClock;
     };
+
+export interface TriggeredConsequence {
+  readonly id: string;
+  readonly title: string;
+  readonly text: string;
+  readonly changes: readonly AppliedChange[];
+}
+
+export interface DecisionHistoryEntry {
+  readonly nodeId: string;
+  readonly choiceId: string;
+  readonly decidedAt: GameClock;
+  readonly changes: readonly AppliedChange[];
+  readonly skillCheck?: SkillCheckResult;
+  readonly triggeredConsequences?: readonly TriggeredConsequence[];
+}
+
+export interface GameState {
+  readonly schemaVersion: 2;
+  readonly contentVersion: string;
+  readonly player: PlayerProfile;
+  readonly clock: GameClock;
+  readonly location: LocationId;
+  readonly currentNodeId: string;
+  readonly stats: Stats;
+  readonly moneyCents: number;
+  readonly flags: Readonly<Record<string, boolean>>;
+  readonly relationships: Readonly<Record<string, RelationshipState>>;
+  readonly rollIndex: number;
+  readonly seed: string;
+  readonly history: readonly DecisionHistoryEntry[];
+  readonly scheduledConsequences: readonly ScheduledConsequence[];
+}
+
+export interface SkillCheckBonusFlag {
+  readonly flag: string;
+  readonly label: string;
+  readonly value: number;
+}
+
+export interface SkillCheckOutcome {
+  readonly nextNodeId: string;
+  readonly effects: readonly ImmediateEffect[];
+}
+
+export interface StorySkillCheck {
+  readonly eventId: string;
+  readonly stat: StatKey;
+  readonly difficulty: number;
+  readonly bonusFlags: readonly SkillCheckBonusFlag[];
+  readonly outcomes: Readonly<Record<OutcomeTier, SkillCheckOutcome>>;
+}
 
 export interface StoryChoice {
   readonly id: string;
@@ -147,6 +257,7 @@ export interface StoryChoice {
   readonly conditions: readonly Condition[];
   readonly effects: readonly Effect[];
   readonly nextNodeId: string;
+  readonly skillCheck?: StorySkillCheck;
 }
 
 export interface StoryChoiceAvailability {
@@ -155,10 +266,17 @@ export interface StoryChoiceAvailability {
   readonly failedConditions: readonly Condition[];
 }
 
+export interface StoryCommitment {
+  readonly label: string;
+  readonly clock: GameClock;
+}
+
 export interface StoryNode {
   readonly id: string;
   readonly title: string;
   readonly text: string;
+  readonly activity: string;
+  readonly nextCommitment?: StoryCommitment;
   readonly choices: readonly StoryChoice[];
   readonly ending?: boolean;
 }
