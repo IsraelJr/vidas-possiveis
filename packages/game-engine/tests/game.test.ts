@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { chooseStoryOption, createGameState, getAvailableChoices, type StoryNode } from "../src";
+import {
+  chooseStoryOption,
+  createGameState,
+  getAvailableChoices,
+  getChoiceAvailability,
+  type StoryNode
+} from "../src";
 
 const node: StoryNode = {
   id: "school.computer-assignment",
@@ -30,6 +36,27 @@ describe("game", () => {
   it("filtra escolhas pelo estado", () => {
     const state = createGameState({ id: "p", name: "Rui", presentation: "man", origin: "low_income" });
     expect(getAvailableChoices(state, node).map((choice) => choice.id)).toEqual(["go-library"]);
+  });
+
+  it("informa por que uma escolha está bloqueada", () => {
+    const state = createGameState({ id: "p", name: "Rui", presentation: "man", origin: "low_income" });
+    const availability = getChoiceAvailability(state, node);
+    const blocked = availability.find((item) => item.choice.id === "use-own-computer");
+
+    expect(blocked).toEqual({
+      choice: node.choices[0],
+      available: false,
+      failedConditions: [{ type: "flag", flag: "hasComputer", value: true }]
+    });
+  });
+
+  it("libera a mesma escolha quando a condição é atendida", () => {
+    const state = createGameState({ id: "p", name: "Rui", presentation: "man", origin: "middle_income" });
+    const availability = getChoiceAvailability(state, node);
+    const ownComputer = availability.find((item) => item.choice.id === "use-own-computer");
+
+    expect(ownComputer?.available).toBe(true);
+    expect(ownComputer?.failedConditions).toEqual([]);
   });
 
   it("registra a escolha e avança o nó", () => {
