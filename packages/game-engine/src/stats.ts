@@ -1,12 +1,10 @@
 import {
   ATTRIBUTE_KEYS,
   CONDITION_KEYS,
-  KNOWLEDGE_KEYS,
   type Attributes,
   type AttributeKey,
   type ConditionsState,
   type ConditionKey,
-  type KnowledgeKey,
   type KnowledgeState
 } from "./types";
 
@@ -26,13 +24,6 @@ const BASE_CONDITIONS: ConditionsState = {
   energy: 75,
   stress: 20,
   health: 80
-};
-
-const BASE_KNOWLEDGE: KnowledgeState = {
-  mathematics: 35,
-  portuguese: 40,
-  physics: 32,
-  technology: 20
 };
 
 export function clampValue(value: number): number {
@@ -55,10 +46,9 @@ export function createInitialConditions(
   ) as unknown as ConditionsState;
 }
 
-export function createInitialKnowledge(
-  adjustments: Partial<Record<KnowledgeKey, number>> = {}
-): KnowledgeState {
+/** O pacote define quais conhecimentos existem e seus valores iniciais. */
+export function createInitialKnowledge(initialValues: KnowledgeState = {}): KnowledgeState {
   return Object.fromEntries(
-    KNOWLEDGE_KEYS.map((key) => [key, clampValue(BASE_KNOWLEDGE[key] + (adjustments[key] ?? 0))])
-  ) as unknown as KnowledgeState;
+    Object.entries(initialValues).map(([key, value]) => [key, clampValue(value)])
+  );
 }
