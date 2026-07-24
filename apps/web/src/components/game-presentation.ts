@@ -7,24 +7,18 @@ import {
   type ConditionKey,
   type GameClock,
   type GameState,
-  type KnowledgeKey,
   type OutcomeTier,
   type PersonCategory,
   type PersonState,
   type RelationshipDimension
 } from "@vidas-possiveis/game-engine";
 
-export const LOCATION_LABELS: Record<GameState["location"], string> = {
-  home: "Casa",
-  school: "Escola",
-  library: "Biblioteca",
-  work: "Trabalho",
-  public_transport: "Transporte público",
-  street: "Na rua",
-  shopping_mall: "Shopping",
-  park: "Parque",
-  party: "Festa"
-};
+export interface PresentationLabels {
+  readonly locationLabels: Readonly<Record<string, string>>;
+  readonly knowledgeLabels: Readonly<Record<string, string>>;
+  readonly flagLabels?: Readonly<Record<string, string>>;
+  readonly reputationLabel: string;
+}
 
 export const ATTRIBUTE_LABELS: Record<AttributeKey, string> = {
   reasoning: "Raciocínio",
@@ -41,13 +35,6 @@ export const CONDITION_LABELS: Record<ConditionKey, string> = {
   health: "Saúde"
 };
 
-export const KNOWLEDGE_LABELS: Record<KnowledgeKey, string> = {
-  mathematics: "Matemática",
-  portuguese: "Português",
-  physics: "Física",
-  technology: "Tecnologia"
-};
-
 const RELATIONSHIP_LABELS: Record<RelationshipDimension, string> = {
   trust: "Confiança",
   closeness: "Proximidade",
@@ -58,26 +45,6 @@ export const CATEGORY_LABELS: Record<PersonCategory, string> = {
   scene: "Pessoa de cena",
   known: "Pessoa conhecida",
   important: "Pessoa importante"
-};
-
-const FLAG_LABELS: Record<string, string> = {
-  ateBreakfast: "Tomou café",
-  ateSchoolMeal: "Comeu a merenda",
-  boughtCanteenSnack: "Comprou lanche",
-  skippedClass: "Saiu durante a aula vaga",
-  promisedHelp: "Prometeu ajudar o colega",
-  sharedPlan: "Organizou o grupo",
-  removedGroupMate: "Retirou o colega do trabalho",
-  humiliatedGroupMate: "Expôs o colega no grupo",
-  preparedAssignment: "Preparou o trabalho",
-  lateForPresentation: "Chegou atrasado à apresentação",
-  schoolFight: "Envolveu-se em uma briga",
-  supportedFamily: "Ajudou a família",
-  liedToFamily: "Mentiu para sair",
-  formationUniversity: "Escolheu faculdade",
-  formationTechnical: "Escolheu curso técnico",
-  formationOnlineWork: "Escolheu trabalhar e estudar online",
-  formationSelfStudy: "Escolheu trabalho e estudo independente"
 };
 
 export const OUTCOME_LABELS: Record<OutcomeTier, { title: string; text: string }> = {
@@ -109,7 +76,6 @@ export const PROGRESS_STATUS_LABELS = {
   saved: "Escolhas guardadas",
   error: "Não foi possível guardar suas escolhas"
 } as const;
-
 export type ProgressStatus = keyof typeof PROGRESS_STATUS_LABELS;
 
 const MONEY_FORMATTER = new Intl.NumberFormat("pt-BR", {
@@ -123,7 +89,6 @@ export function formatMoney(cents: number): string {
 
 export function formatDuration(totalMinutes: number): string {
   if (totalMinutes === 0) return "agora";
-
   const prefix = totalMinutes < 0 ? "atraso de " : "";
   const absoluteMinutes = Math.abs(totalMinutes);
   const days = Math.floor(absoluteMinutes / (24 * 60));
@@ -134,7 +99,6 @@ export function formatDuration(totalMinutes: number): string {
     hours > 0 ? `${hours}h` : null,
     minutes > 0 ? `${minutes}min` : null
   ].filter((part): part is string => part !== null);
-
   return `${prefix}${parts.join(" ")}`;
 }
 
@@ -142,51 +106,71 @@ export function formatClock(clock: GameClock): string {
   return `${formatDatePtBr(clock.date)} às ${formatTime(clock.minuteOfDay)}`;
 }
 
+export function formatLocation(location: string, labels: PresentationLabels): string {
+  return labels.locationLabels[location] ?? location;
+}
+
+export function formatKnowledge(knowledge: string, labels: PresentationLabels): string {
+  return labels.knowledgeLabels[knowledge] ?? knowledge;
+}
+
+function formatFlag(flag: string, labels: PresentationLabels): string {
+  return labels.flagLabels?.[flag] ?? flag;
+}
+
 function personName(state: GameState, personId: string): string {
   return state.people[personId]?.name ?? "essa pessoa";
 }
 
-export function formatCondition(condition: Condition, state: GameState): string {
+export function formatCondition(
+  condition: Condition,
+  state: GameState,
+  labels: PresentationLabels
+): string {
   switch (condition.type) {
     case "attribute":
       return `${ATTRIBUTE_LABELS[condition.attribute]} deve ser ${condition.operator} ${condition.value}`;
     case "condition":
       return `${CONDITION_LABELS[condition.condition]} deve ser ${condition.operator} ${condition.value}`;
     case "knowledge":
-      return `${KNOWLEDGE_LABELS[condition.knowledge]} deve ser ${condition.operator} ${condition.value}`;
+      return `${formatKnowledge(condition.knowledge, labels)} deve ser ${condition.operator} ${condition.value}`;
     case "reputation":
-      return `Reputação deve ser ${condition.operator} ${condition.value}`;
+      return `${labels.reputationLabel} deve ser ${condition.operator} ${condition.value}`;
     case "flag":
-      return `${FLAG_LABELS[condition.flag] ?? condition.flag} deve ser ${condition.value ? "sim" : "não"}`;
+      return `${formatFlag(condition.flag, labels)} deve ser ${condition.value ? "sim" : "não"}`;
     case "money":
       return `Dinheiro deve ser ${condition.operator} ${formatMoney(condition.valueCents)}`;
     case "location":
-      return `Local deve ser ${LOCATION_LABELS[condition.value]}`;
+      return `Local deve ser ${formatLocation(condition.value, labels)}`;
     case "relationship":
       return `${RELATIONSHIP_LABELS[condition.dimension]} com ${personName(state, condition.personId)} deve ser ${condition.operator} ${condition.value}`;
   }
 }
 
-export function formatChange(change: AppliedChange, state: GameState): string | null {
+export function formatChange(
+  change: AppliedChange,
+  state: GameState,
+  labels: PresentationLabels
+): string | null {
   switch (change.type) {
     case "attribute":
       return `${ATTRIBUTE_LABELS[change.attribute]}: ${change.before} → ${change.after}`;
     case "condition":
       return `${CONDITION_LABELS[change.condition]}: ${change.before} → ${change.after}`;
     case "knowledge":
-      return `${KNOWLEDGE_LABELS[change.knowledge]}: ${change.before} → ${change.after}`;
+      return `${formatKnowledge(change.knowledge, labels)}: ${change.before} → ${change.after}`;
     case "reputation":
-      return `Reputação: ${change.before} → ${change.after}`;
+      return `${labels.reputationLabel}: ${change.before} → ${change.after}`;
     case "money":
       return `Dinheiro: ${formatMoney(change.beforeCents)} → ${formatMoney(change.afterCents)}`;
     case "flag":
-      return `${FLAG_LABELS[change.flag] ?? change.flag}: ${change.after ? "Sim" : "Não"}`;
+      return `${formatFlag(change.flag, labels)}: ${change.after ? "Sim" : "Não"}`;
     case "clock":
       return change.before.date === change.after.date
         ? `Horário: ${formatTime(change.before.minuteOfDay)} → ${formatTime(change.after.minuteOfDay)}`
         : `Tempo: ${formatClock(change.before)} → ${formatClock(change.after)}`;
     case "location":
-      return `Local: ${LOCATION_LABELS[change.before]} → ${LOCATION_LABELS[change.after]}`;
+      return `Local: ${formatLocation(change.before, labels)} → ${formatLocation(change.after, labels)}`;
     case "relationship":
       return `${RELATIONSHIP_LABELS[change.dimension]} com ${personName(state, change.personId)}: ${change.before} → ${change.after}`;
     case "memory":
@@ -208,19 +192,16 @@ export function relationshipSummary(person: PersonState): string {
     person.trust >= 35 ? "demonstra confiança moderada" :
     person.trust >= 20 ? "ainda confia com cautela" :
     "quase não confia em você";
-
   const closeness =
     person.closeness >= 60 ? "vocês são muito próximos" :
     person.closeness >= 35 ? "há uma convivência relevante" :
     person.closeness >= 15 ? "vocês se conhecem, mas não são próximos" :
     "vocês são distantes";
-
   const tension =
     person.tension >= 50 ? "existe um conflito forte entre vocês" :
     person.tension >= 25 ? "a relação está desgastada" :
     person.tension >= 10 ? "há algum desconforto" :
     "há pouca tensão";
-
   return `${person.name} ${trust}; ${closeness}; ${tension}.`;
 }
 
