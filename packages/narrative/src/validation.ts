@@ -1,9 +1,15 @@
-import type { StoryNode } from "@vidas-possiveis/game-engine";
+import type { Effect, ImmediateEffect, StoryNode } from "@vidas-possiveis/game-engine";
 import type { NarrativePack } from "./pack";
 
 export interface NarrativeValidationIssue {
   readonly code: string;
   readonly message: string;
+}
+
+function immediateEffects(effects: readonly Effect[]): readonly ImmediateEffect[] {
+  return effects.flatMap((effect) =>
+    effect.type === "schedule_consequence" ? [...effect.effects] : [effect]
+  );
 }
 
 export function validateNarrativePack(pack: NarrativePack): readonly NarrativeValidationIssue[] {
@@ -13,6 +19,9 @@ export function validateNarrativePack(pack: NarrativePack): readonly NarrativeVa
 
   if (!pack.nodes.has(pack.entryNodeId)) {
     issues.push({ code: "missing-entry", message: `Entrada inexistente: ${pack.entryNodeId}` });
+  }
+  if (pack.presentation.reputationLabel.trim().length === 0) {
+    issues.push({ code: "missing-reputation-label", message: "O pacote não nomeia sua reputação." });
   }
 
   for (const [nodeId, node] of pack.nodes) {
@@ -37,6 +46,40 @@ export function validateNarrativePack(pack: NarrativePack): readonly NarrativeVa
           issues.push({
             code: "missing-destination",
             message: `${nodeId}/${choice.id} aponta para ${destination}`
+          });
+        }
+      }
+
+      for (const condition of choice.conditions) {
+        if (condition.type === "location" && !pack.presentation.locationLabels[condition.value]) {
+          issues.push({
+            code: "missing-location-label",
+            message: `${nodeId}/${choice.id} usa o local sem rótulo ${condition.value}`
+          });
+        }
+        if (condition.type === "knowledge" && !pack.presentation.knowledgeLabels[condition.knowledge]) {
+          issues.push({
+            code: "missing-knowledge-label",
+            message: `${nodeId}/${choice.id} usa o conhecimento sem rótulo ${condition.knowledge}`
+          });
+        }
+      }
+
+      const effects = [
+        ...immediateEffects(choice.effects),
+        ...Object.values(choice.skillCheck?.outcomes ?? {}).flatMap((outcome) => outcome.effects)
+      ];
+      for (const effect of effects) {
+        if (effect.type === "set_location" && !pack.presentation.locationLabels[effect.location]) {
+          issues.push({
+            code: "missing-location-label",
+            message: `${nodeId}/${choice.id} define o local sem rótulo ${effect.location}`
+          });
+        }
+        if (effect.type === "knowledge" && !pack.presentation.knowledgeLabels[effect.knowledge]) {
+          issues.push({
+            code: "missing-knowledge-label",
+            message: `${nodeId}/${choice.id} altera o conhecimento sem rótulo ${effect.knowledge}`
           });
         }
       }
