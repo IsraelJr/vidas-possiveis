@@ -1,38 +1,131 @@
 import { describe, expect, it } from "vitest";
-import { chooseStoryOption, createGameState, getAvailableChoices, migrateGameState, PROLOGUE_NAMES, type GameState, type StoryNode } from "../src";
+import {
+  chooseStoryOption,
+  createGameState,
+  getChoiceAvailability,
+  migrateGameState,
+  readPersistedPlayerProfile,
+  type GameScenarioSetup,
+  type PlayerProfile,
+  type StoryNode,
+  type StorySkillCheck
+} from "../src";
+
+const player: PlayerProfile = {
+  id: "p",
+  name: "Rui",
+  presentation: "man",
+  origin: "middle_income",
+  romanticPreference: "women"
+};
+
+const setup: GameScenarioSetup = {
+  id: "generic-life",
+  contentVersion: "generic-1",
+  entryNodeId: "start",
+  clock: { date: "2026-02-16", minuteOfDay: 6 * 60 },
+  location: "home",
+  moneyCents: 10_000,
+  flags: { allowed: false },
+  usedNames: { rui: "player", paula: "person-1" },
+  variables: {},
+  people: {
+    "person-1": {
+      id: "person-1",
+      name: "Paula",
+      gender: "woman",
+      role: "Colega",
+      category: "known",
+      presence: "active",
+      contextSummary: "Colega conhecida.",
+      trust: 30,
+      closeness: 20,
+      tension: 5,
+      memories: []
+    }
+  }
+};
+
+const outcomes: StorySkillCheck["outcomes"] = {
+  critical_failure: { nextNodeId: "critical", effects: [{ type: "condition", condition: "stress", delta: 10 }] },
+  failure: { nextNodeId: "failure", effects: [{ type: "condition", condition: "stress", delta: 5 }] },
+  partial_success: { nextNodeId: "partial", effects: [{ type: "reputation", delta: 1 }] },
+  success: { nextNodeId: "success", effects: [{ type: "reputation", delta: 3 }] },
+  exceptional_success: { nextNodeId: "exceptional", effects: [{ type: "reputation", delta: 5 }] }
+};
 
 const node: StoryNode = {
-  id: "prologue.morning", moduleId: "test", title: "Manhã", text: "Teste", activity: "Sair",
-  choices: [{ id: "go", label: "Ir", conditions: [], effects: [{ type: "advance_time", minutes: 60 }], nextNodeId: "after" }]
+  id: "start",
+  title: "Decisão",
+  text: "Escolha.",
+  activity: "Decidir",
+  choices: [
+    {
+      id: "blocked",
+      label: "Bloqueada",
+      conditions: [{ type: "flag", flag: "allowed", value: true }],
+      effects: [],
+      nextNodeId: "after"
+    },
+    {
+      id: "present",
+      label: "Agir",
+      conditions: [],
+      effects: [
+        { type: "advance_time", minutes: 20 },
+        { type: "relationship", personId: "person-1", dimension: "trust", delta: 4 }
+      ],
+      nextNodeId: "partial",
+      skillCheck: {
+        eventId: "generic-action",
+        attribute: "communication",
+        difficulty: 50,
+        bonusFlags: [],
+        outcomes
+      }
+    }
+  ]
 };
 
 describe("game", () => {
-  it("gera e reserva uma pessoa persistente do prólogo", () => {
-    const state = createGameState({ id: "life-1", name: "Rui", presentation: "man", origin: "middle_income" });
-    const person = state.relationships["school.groupMate"]!;
-    expect([...PROLOGUE_NAMES.woman, ...PROLOGUE_NAMES.man]).toContain(person.name);
-    expect(person.category).toBe("known");
-    expect(state.identityRegistry[person.name.toLocaleLowerCase("pt-BR")]?.personId).toBe(person.id);
+  it("explica escolhas bloqueadas", () => {
+    const state = createGameState(player, setup);
+    const blocked = getChoiceAvailability(state, node).find((item) => item.choice.id === "blocked");
+    expect(blocked?.available).toBe(false);
+    expect(blocked?.failedConditions).toEqual([{ type: "flag", flag: "allowed", value: true }]);
   });
 
-  it("é determinístico para a mesma vida", () => {
-    const player = { id: "same-life", name: "Rui", presentation: "man", origin: "middle_income" } as const;
-    expect(createGameState(player).relationships).toEqual(createGameState(player).relationships);
+  it("usa teste determinístico e mantém o personId", () => {
+    const state = createGameState(player, setup);
+    const next = chooseStoryOption(state, node, "present");
+    const result = next.history.at(-1)?.skillCheck;
+    expect(result).toBeDefined();
+    expect(next.currentNodeId).toBe(outcomes[result!.outcome].nextNodeId);
+    expect(next.people["person-1"]?.name).toBe("Paula");
+    expect(next.people["person-1"]?.trust).toBe(34);
   });
 
-  it("registra escolha e avança o relógio", () => {
-    const state = createGameState({ id: "p", name: "Rui", presentation: "man", origin: "middle_income" });
-    const next = chooseStoryOption(state, node, getAvailableChoices(state, node)[0]!.id);
-    expect(next.clock.minuteOfDay).toBe(state.clock.minuteOfDay + 60);
-    expect(next.currentNodeId).toBe("after");
-  });
-
-  it("migra saves antigos sem apagar a identidade anterior", () => {
-    const current = createGameState({ id: "p", name: "Rui", presentation: "man", origin: "middle_income" });
-    const legacy = { ...current, schemaVersion: 2, narrativePackageId: undefined, identityRegistry: undefined } as unknown as GameState;
-    const migrated = migrateGameState(legacy);
+  it("migra progresso antigo para o pacote atual sem perder o personagem", () => {
+    const legacy = {
+      schemaVersion: 2,
+      contentVersion: "sprint-1.0",
+      player: { id: "old", name: "Lia", presentation: "woman", origin: "low_income" }
+    };
+    const migrated = migrateGameState(legacy, setup);
     expect(migrated.schemaVersion).toBe(3);
-    expect(migrated.narrativePackageId).toBe("school-prologue-br-v1");
-    expect(migrated.relationships["school.groupMate"]).toBeDefined();
+    expect(migrated.player.name).toBe("Lia");
+    expect(migrated.player.origin).toBe("middle_income");
+    expect(migrated.currentNodeId).toBe(setup.entryNodeId);
+    expect(migrated.flags.migratedFromEarlierPrologue).toBe(true);
+  });
+
+  it("lê perfil antigo e não presume preferência romântica", () => {
+    expect(readPersistedPlayerProfile({ player: { id: "x", name: "Leo", presentation: "man" } })).toEqual({
+      id: "x",
+      name: "Leo",
+      presentation: "man",
+      origin: "middle_income",
+      romanticPreference: "undefined"
+    });
   });
 });

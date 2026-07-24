@@ -3,9 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "packageManager": "pnpm@10.12.1",
-  "engines": {
-    "node": ">=22.0.0"
-  },
+  "engines": { "node": ">=22.0.0" },
   "scripts": {
     "dev": "pnpm --filter @vidas-possiveis/web dev",
     "build": "pnpm --filter @vidas-possiveis/web build",
@@ -16,6 +14,7 @@
     "test:e2e": "pnpm --filter @vidas-possiveis/web test:e2e",
     "audit:sprint0": "node scripts/audit-sprint0.mjs",
     "audit:sprint1": "node scripts/audit-sprint1.mjs",
+    "audit:prologue": "node scripts/audit-prologue.mjs",
     "audit:actions": "node scripts/audit-actions-usage.mjs"
   },
   "devDependencies": {
