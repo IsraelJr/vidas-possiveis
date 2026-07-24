@@ -3,6 +3,7 @@ import { conditionsAreMet, evaluateCondition } from "./conditions";
 import { applyEffects } from "./effects";
 import { runSkillCheck } from "./skill-check";
 import {
+  clampValue,
   createInitialAttributes,
   createInitialConditions,
   createInitialKnowledge
@@ -27,10 +28,10 @@ export function createGameState(player: PlayerProfile, setup: GameScenarioSetup)
     clock: setup.clock,
     location: setup.location,
     currentNodeId: setup.entryNodeId,
-    attributes: createInitialAttributes(),
-    conditions: createInitialConditions(),
-    knowledge: createInitialKnowledge(),
-    reputation: 10,
+    attributes: createInitialAttributes(setup.attributeAdjustments),
+    conditions: createInitialConditions(setup.conditionAdjustments),
+    knowledge: createInitialKnowledge(setup.initialKnowledge),
+    reputation: clampValue(setup.initialReputation ?? 10),
     moneyCents: setup.moneyCents,
     flags: setup.flags,
     people: setup.people,
