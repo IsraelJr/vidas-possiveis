@@ -9,22 +9,12 @@ const attributeKeySchema = z.enum([
   "agility"
 ]);
 const conditionKeySchema = z.enum(["energy", "stress", "health"]);
-const knowledgeKeySchema = z.enum(["mathematics", "portuguese", "physics", "technology"]);
+const knowledgeKeySchema = z.string().min(1);
 const relationshipDimensionSchema = z.enum(["trust", "closeness", "tension"]);
 const personCategorySchema = z.enum(["scene", "known", "important"]);
 const personPresenceSchema = z.enum(["active", "distant", "inactive", "unavailable", "deceased"]);
 const comparisonOperatorSchema = z.enum([">=", "<=", ">", "<", "=="]);
-const locationSchema = z.enum([
-  "home",
-  "school",
-  "library",
-  "work",
-  "public_transport",
-  "street",
-  "shopping_mall",
-  "park",
-  "party"
-]);
+const locationSchema = z.string().min(1);
 const clockSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   minuteOfDay: z.number().int().min(0).max(1439)
@@ -118,12 +108,10 @@ const outcomeTierSchema = z.enum([
   "success",
   "exceptional_success"
 ]);
-
 const skillOutcomeSchema = z.object({
   nextNodeId: z.string().min(1),
   effects: z.array(immediateEffectSchema)
 });
-
 const skillCheckSchema = z.object({
   eventId: z.string().min(1),
   attribute: attributeKeySchema,
