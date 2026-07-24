@@ -1,19 +1,20 @@
 # Estado Canônico do Projeto
 
 **Data:** 24/07/2026  
-**Status:** consolidação modular concluída, integrada à `main` e publicada em produção.
+**Status:** consolidação modular concluída, integrada à `main` e publicada em produção; expansão para dois anos escolares e pontes profissionais aprovada, ainda não implementada.
 
-Este arquivo substitui somente informações operacionais antigas sobre o estado do PR #7. As regras continuam em `docs/HANDOFF_CANONICAL.md`.
+As regras estão em `docs/HANDOFF_CANONICAL.md`. A estrutura escolar está em `docs/PROLOGUE_CANONICAL.md`.
 
-## Evidências
+## Evidências da versão publicada
 
-- PR funcional: `#7`;
+- PR funcional da consolidação: `#7`;
 - SHA validado antes do merge: `36523f968325918ac4a629a0ef1403324030fd03`;
 - execução definitiva da CI: `30113406692`;
 - resultado da CI: aprovado integralmente;
 - commit squash na `main`: `03646550a2cf75ab48ee9d56ee07a8028ae3c5fd`;
 - preview da Vercel: aprovado;
-- deploy de produção da `main`: aprovado.
+- deploy de produção da `main`: aprovado;
+- encerramento documental: PR `#8`, commit `d97d15e3ef3094c7aef5da17bff5593abe695545`.
 
 A execução definitiva aprovou:
 
@@ -32,28 +33,49 @@ A execução definitiva aprovou:
 
 ## Estado das entregas
 
-- Sprint 0: concluída;
-- Sprint 1: concluída;
-- Prólogo Canônico v1.0: implementado e jogável;
-- arquitetura de pacotes: consolidada;
-- locais e conhecimentos definidos por pacote: implementados;
-- interface genérica: implementada;
-- pessoas, categorias e memórias: implementadas;
-- prova de reutilização profissional: aprovada;
-- produção: publicada.
+### Implementado e publicado
 
-## Pendências de produto
+- Sprint 0;
+- Sprint 1;
+- Prólogo Canônico v1.0 com um ano escolar jogável;
+- arquitetura de pacotes;
+- locais e conhecimentos definidos por pacote;
+- interface textual genérica;
+- pessoas, categorias e memórias;
+- prova de reutilização profissional;
+- save local em IndexedDB.
 
-- catálogo de vidas e profissões;
-- seleção de pacote na interface;
-- controle de acesso gratuito/pago;
-- resolvedor executável de reencontros;
+### Decisão canônica aprovada, ainda não implementada
+
+- toda nova vida passa obrigatoriamente pela escola;
+- vida escolar com dois anos letivos;
+- início no segundo ano e conclusão no terceiro;
+- eventos escolares diferentes em novas vidas;
+- pontes profissionais durante a escola;
+- ponte Futebol com treinos semanais e jogos aos finais de semana;
+- escolha textual de profissão depois da formatura;
+- confirmação ao não escolher uma profissão adquirida;
+- profissão adquirida permanece disponível para futuras vidas;
+- Firebase para saves remotos e snapshots.
+
+## Itens adiados
+
+- catálogo visual de vidas;
+- conteúdo pago em produção;
+- cosméticos;
+- casas e automóveis diferenciados;
+- resolvedor automático de reencontros;
 - banco geral de nomes;
-- sincronização entre dispositivos;
-- expansão dos caminhos de formação.
-
-Nenhuma dessas pendências exige reescrever o motor.
+- sincronização Firebase efetiva.
 
 ## Próximo passo recomendado
 
-Criar o catálogo de vidas/profissões e, depois, adicionar novos pacotes profissionais seguindo `docs/NARRATIVE_PACKAGE_ARCHITECTURE.md`.
+Executar uma sprint de expansão escolar que:
+
+1. migre o recorte atual para dois anos;
+2. preserve as cenas já válidas;
+3. crie o terceiro ano;
+4. implemente o contrato de ponte vocacional;
+5. mantenha a seleção pós-escola totalmente textual;
+6. preserve saves por migração explícita;
+7. valide tempo, pessoas, consequências e rotas em CI e E2E.
