@@ -23,7 +23,11 @@ const yearModuleFiles = [
 
 const requiredFiles = [
   "docs/HANDOFF_CANONICAL.md",
+  "docs/HANDOFF_REFERENCE.md",
   "docs/PROLOGUE_CANONICAL.md",
+  "docs/PROLOGUE_CANONICAL_SOURCE_POINTER.md",
+  "docs/PROLOGUE_IMPLEMENTATION_AUDIT.md",
+  "docs/NARRATIVE_PACKAGE_ARCHITECTURE.md",
   "packages/game-engine/src/random.ts",
   "packages/narrative/src/pack.ts",
   "packages/narrative/src/registry.ts",
@@ -117,6 +121,15 @@ for (const marker of [
   "initialKnowledge"
 ]) {
   if (!prologuePack.includes(marker)) failures.push(`Pacote do prólogo não contém: ${marker}`);
+}
+
+const architecture = await readFile("docs/NARRATIVE_PACKAGE_ARCHITECTURE.md", "utf8");
+for (const marker of [
+  "Nova profissão significa novo pacote",
+  "Controle de bola",
+  "A interface não mantém catálogos próprios"
+]) {
+  if (!architecture.includes(marker)) failures.push(`Arquitetura canônica não contém: ${marker}`);
 }
 
 if (failures.length > 0) {
