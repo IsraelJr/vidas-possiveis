@@ -207,7 +207,7 @@ export interface GameScenarioSetup {
   readonly clock: GameClock;
   readonly location: LocationId;
   readonly moneyCents: number;
-  readonly initialKnowledge: KnowledgeState;
+  readonly initialKnowledge?: KnowledgeState;
   readonly attributeAdjustments?: Partial<Record<AttributeKey, number>>;
   readonly conditionAdjustments?: Partial<Record<ConditionKey, number>>;
   readonly initialReputation?: number;
