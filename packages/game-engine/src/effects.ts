@@ -1,28 +1,11 @@
 import { advanceClock, assertValidClock } from "./clock";
 import { clampStat } from "./stats";
-import type {
-  AppliedChange,
-  Effect,
-  GameState,
-  RelationshipState,
-  ScheduledConsequence,
-  Stats
-} from "./types";
+import type { AppliedChange, Effect, GameState, RelationshipState, ScheduledConsequence, Stats } from "./types";
 
-export interface EffectsResult {
-  readonly state: GameState;
-  readonly changes: readonly AppliedChange[];
-}
+export interface EffectsResult { readonly state: GameState; readonly changes: readonly AppliedChange[]; }
+export interface EffectContext { readonly sourceChoiceId?: string; }
 
-export interface EffectContext {
-  readonly sourceChoiceId?: string;
-}
-
-export function applyEffects(
-  state: GameState,
-  effects: readonly Effect[],
-  context: EffectContext = {}
-): EffectsResult {
+export function applyEffects(state: GameState, effects: readonly Effect[], context: EffectContext = {}): EffectsResult {
   let nextState = state;
   const changes: AppliedChange[] = [];
 
@@ -76,17 +59,17 @@ export function applyEffects(
         const before = relationship[effect.dimension];
         const after = clampStat(before + effect.delta);
         const updated: RelationshipState = { ...relationship, [effect.dimension]: after };
-        nextState = {
-          ...nextState,
-          relationships: { ...nextState.relationships, [effect.relationshipId]: updated }
-        };
-        changes.push({
-          type: "relationship",
-          relationshipId: effect.relationshipId,
-          dimension: effect.dimension,
-          before,
-          after
-        });
+        nextState = { ...nextState, relationships: { ...nextState.relationships, [effect.relationshipId]: updated } };
+        changes.push({ type: "relationship", relationshipId: effect.relationshipId, dimension: effect.dimension, before, after });
+        break;
+      }
+      case "promote_person": {
+        const relationship = nextState.relationships[effect.relationshipId];
+        if (!relationship) throw new Error(`Relação inexistente: ${effect.relationshipId}`);
+        const before = relationship.category;
+        const updated: RelationshipState = { ...relationship, category: effect.category };
+        nextState = { ...nextState, relationships: { ...nextState.relationships, [effect.relationshipId]: updated } };
+        changes.push({ type: "person_category", relationshipId: effect.relationshipId, before, after: effect.category });
         break;
       }
       case "schedule_consequence": {
@@ -99,18 +82,11 @@ export function applyEffects(
           triggerAt,
           effects: effect.effects
         };
-        nextState = {
-          ...nextState,
-          scheduledConsequences: [
-            ...nextState.scheduledConsequences.filter((item) => item.id !== scheduled.id),
-            scheduled
-          ]
-        };
+        nextState = { ...nextState, scheduledConsequences: [...nextState.scheduledConsequences.filter((item) => item.id !== scheduled.id), scheduled] };
         changes.push({ type: "scheduled_consequence", consequenceId: scheduled.id, triggerAt });
         break;
       }
     }
   }
-
   return { state: nextState, changes };
 }
