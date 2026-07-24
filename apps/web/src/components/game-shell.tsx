@@ -3,7 +3,6 @@
 import {
   ATTRIBUTE_KEYS,
   CONDITION_KEYS,
-  KNOWLEDGE_KEYS,
   chooseStoryOption,
   createGameState,
   formatDatePtBr,
@@ -18,31 +17,38 @@ import {
   type RomanticPreference
 } from "@vidas-possiveis/game-engine";
 import {
+  getNarrativePack,
+  getStoryNodeForState,
+  renderNodeForState,
+  schoolProloguePack
+} from "@vidas-possiveis/narrative";
+import { IndexedDbSaveRepository } from "@vidas-possiveis/persistence";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
   ATTRIBUTE_LABELS,
   CATEGORY_LABELS,
   CONDITION_LABELS,
-  KNOWLEDGE_LABELS,
-  LOCATION_LABELS,
   OUTCOME_LABELS,
   PROGRESS_STATUS_LABELS,
   formatChange,
   formatClock,
   formatCondition,
   formatDuration,
+  formatKnowledge,
+  formatLocation,
   formatMoney,
   relationshipPeople,
   relationshipSummary,
   type ProgressStatus
 } from "./game-presentation";
-import {
-  createPrologueSetup,
-  getStoryNodeForState,
-  renderNodeForState
-} from "@vidas-possiveis/narrative";
-import { IndexedDbSaveRepository } from "@vidas-possiveis/persistence";
-import { useEffect, useMemo, useRef, useState } from "react";
 
 const SAVE_SLOT = "primary";
+
+function savedScenarioId(saved: unknown): string | null {
+  if (!saved || typeof saved !== "object") return null;
+  const scenario = (saved as { readonly scenario?: { readonly id?: unknown } }).scenario;
+  return typeof scenario?.id === "string" ? scenario.id : null;
+}
 
 export function GameShell() {
   const repository = useMemo(() => new IndexedDbSaveRepository(), []);
@@ -69,8 +75,9 @@ export function GameShell() {
 
       const profile = readPersistedPlayerProfile(saved);
       if (!profile) throw new Error("Personagem salvo inválido.");
-      const setup = createPrologueSetup(profile);
-      setState(migrateGameState(saved, setup));
+      const requestedPackId = savedScenarioId(saved);
+      const pack = requestedPackId ? getNarrativePack(requestedPackId) : schoolProloguePack;
+      setState(migrateGameState(saved, pack.createSetup(profile)));
       setProgressStatus("saved");
       setLoading(false);
     }).catch(() => {
@@ -126,8 +133,7 @@ export function GameShell() {
       origin: "middle_income",
       romanticPreference
     };
-    const setup = createPrologueSetup(profile);
-    setState(createGameState(profile, setup));
+    setState(createGameState(profile, schoolProloguePack.createSetup(profile)));
   }
 
   if (loading) {
@@ -189,6 +195,8 @@ export function GameShell() {
     );
   }
 
+  const pack = getNarrativePack(state.scenario.id);
+  const labels = pack.presentation;
   const rawNode = getStoryNodeForState(state);
   const node = renderNodeForState(state, rawNode);
   const choiceAvailability = getChoiceAvailability(state, node);
@@ -198,7 +206,7 @@ export function GameShell() {
   const commitment = node.nextCommitment;
   const minutesUntilCommitment = commitment ? minutesBetweenClocks(state.clock, commitment.clock) : null;
   const visibleChanges = latestHistory?.changes
-    .map((change) => formatChange(change, state))
+    .map((change) => formatChange(change, state, labels))
     .filter((change): change is string => change !== null) ?? [];
   const triggeredConsequences = latestHistory?.triggeredConsequences ?? [];
   const skillResult = latestHistory?.skillCheck ? OUTCOME_LABELS[latestHistory.skillCheck.outcome] : null;
@@ -219,7 +227,7 @@ export function GameShell() {
         <header className="clock" data-testid="game-clock" aria-label="Data, horário e contexto atual do personagem">
           <div><span className="label">Data</span><strong>{formatDatePtBr(state.clock.date)}</strong></div>
           <div><span className="label">Horário</span><strong data-testid="current-time">{formatTime(state.clock.minuteOfDay)}</strong></div>
-          <div><span className="label">Local</span><strong>{LOCATION_LABELS[state.location]}</strong></div>
+          <div><span className="label">Local</span><strong>{formatLocation(state.location, labels)}</strong></div>
           <div><span className="label">Atividade atual</span><strong data-testid="current-activity">{node.activity}</strong></div>
           <div>
             <span className="label">Próximo compromisso</span>
@@ -314,8 +322,8 @@ export function GameShell() {
         <section className="panel">
           <h2>Conhecimentos</h2>
           <div className="stats-grid">
-            {KNOWLEDGE_KEYS.map((key) => (
-              <div className="stat" key={key}><span>{KNOWLEDGE_LABELS[key]}</span><strong>{state.knowledge[key]}</strong></div>
+            {Object.entries(state.knowledge).map(([key, value]) => (
+              <div className="stat" key={key}><span>{formatKnowledge(key, labels)}</span><strong>{value}</strong></div>
             ))}
           </div>
         </section>
@@ -324,7 +332,7 @@ export function GameShell() {
           <h2>Recursos e trajetória</h2>
           <div className="stats-grid">
             <div className="stat"><span>Dinheiro</span><strong>{formatMoney(state.moneyCents)}</strong></div>
-            <div className="stat"><span>Reputação na escola</span><strong>{state.reputation}</strong></div>
+            <div className="stat"><span>{labels.reputationLabel}</span><strong>{state.reputation}</strong></div>
           </div>
         </section>
 
@@ -366,7 +374,7 @@ export function GameShell() {
               <ul>
                 {blockedChoices.map(({ choice, failedConditions }) => (
                   <li key={choice.id}>
-                    {choice.label}: {failedConditions.map((condition) => formatCondition(condition, state)).join("; ")}
+                    {choice.label}: {failedConditions.map((condition) => formatCondition(condition, state, labels)).join("; ")}
                   </li>
                 ))}
               </ul>
@@ -382,10 +390,7 @@ export function GameShell() {
             nextCommitment: commitment,
             minutesUntilCommitment,
             progressStatus,
-            rollIndex: state.rollIndex,
-            flags: state.flags,
             people: state.people,
-            usedNames: state.usedNames,
             scheduledConsequences: state.scheduledConsequences,
             latestHistory
           }, null, 2)}</pre>
