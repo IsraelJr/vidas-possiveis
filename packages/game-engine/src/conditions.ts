@@ -17,7 +17,7 @@ export function evaluateCondition(state: GameState, condition: Condition): boole
     case "condition":
       return compare(state.conditions[condition.condition], condition.operator, condition.value);
     case "knowledge":
-      return compare(state.knowledge[condition.knowledge], condition.operator, condition.value);
+      return compare(state.knowledge[condition.knowledge] ?? 0, condition.operator, condition.value);
     case "reputation":
       return compare(state.reputation, condition.operator, condition.value);
     case "flag":
