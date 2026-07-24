@@ -1,33 +1,102 @@
 # Referência canônica
 
-Este projeto segue o **Handoff canônico Vidas Possíveis v0.5.0**, consolidado em 23/07/2026.
+Este projeto segue o **Handoff canônico Vidas Possíveis v0.9.0** e o **Prólogo Canônico v1.0**, consolidados em 24/07/2026.
 
-O documento completo deve permanecer nas Fontes do projeto e ser lido antes de ampliar o escopo. Em caso de divergência, o Handoff canônico prevalece sobre decisões locais.
+## Fontes obrigatórias
+
+Antes de ampliar o jogo, consultar:
+
+1. o Handoff canônico completo mantido nas Fontes do projeto;
+2. `docs/PROLOGUE_CANONICAL.md`;
+3. os contratos em `packages/game-engine/src/types.ts`;
+4. o pacote narrativo em `packages/narrative/src/content.ts`.
+
+Em caso de divergência:
+
+- regras gerais de domínio: Handoff;
+- história e critérios do prólogo: Prólogo Canônico;
+- código só prevalece quando a alteração estiver documentada como substituição canônica.
 
 ## Estado de implementação
 
-- Sprint 0: concluída, auditada e integrada à `main` em 23/07/2026;
-- Sprint 1: concluída, auditada e integrada à `main` em 23/07/2026;
-- PR da Sprint 1: `#4`;
-- SHA validado da Sprint 1: `3593f61bc956a2538d9a3caad82f966b7bc13fe2`;
-- execução definitiva da Sprint 1: `30015682906`;
-- commit squash da Sprint 1: `acfd1f909581d6c3e3cc742d9423f8d75f77e41a`;
-- próxima etapa recomendada: Sprint 2, formação e entrada em tecnologia.
+- Sprint 0: concluída;
+- Sprint 1 original: concluída;
+- adequação canônica do prólogo: em validação no branch `agent/prologue-canonical-v1`;
+- Sprint 2 profissional não deve começar antes da aprovação desta adequação.
 
-## Escopo entregue na Sprint 1
+## Regras obrigatórias de pessoas
 
-- sequência de eventos escolares;
-- diferenças de contexto entre origens;
-- teste de habilidade usado pela narrativa;
-- preparação para apresentação;
-- relação persistente com Bia;
-- consequência futura de uma escolha;
-- quatro escolhas iniciais de formação;
-- relógio, localização e compromisso sempre perceptíveis;
-- migração do progresso criado na Sprint 0;
-- linguagem natural para o jogador, sem termos de desenvolvimento;
-- simulações das três origens;
-- 26 testes unitários e de integridade;
-- E2E do prólogo completo e retomada do progresso.
+- pessoa de cena, conhecida e importante são categorias narrativas;
+- papel social e categoria são conceitos separados;
+- pessoas persistentes usam Confiança, Proximidade e Tensão;
+- pessoas afastadas permanecem no histórico;
+- retorno não é vingança automática;
+- nomes são reservados por vida;
+- `personId` é a fonte de identidade;
+- o jogador recebe contexto sobre pessoas que seu personagem já conhece;
+- nenhuma memória materialmente relevante pode ficar escondida antes de uma decisão dependente dela.
 
-A Sprint 2 não deve reabrir decisões arquiteturais já validadas nas Sprints 0 e 1 sem registrar explicitamente a substituição no Handoff.
+## Banco do prólogo
+
+Femininos: Tamires, Solange, Paula e Julia.
+
+Masculinos: Miguel, Israel, Luiz, Rodrigo e Carlos.
+
+O colega principal é gerado deterministicamente entre esses nomes, com um de quatro passados possíveis. O gênero do jogador não determina o gênero desse papel neutro.
+
+## Regras obrigatórias de tempo
+
+- o motor é a fonte única de data e horário;
+- deslocamentos consomem tempo;
+- atividade precisa ser compatível com o horário;
+- chegada antecipada cria espera ou preparação;
+- atraso produz estado próprio;
+- relógio não pode retroceder;
+- rotas devem ser simuladas automaticamente;
+- a apresentação do prólogo começa às 08:00, nunca antes.
+
+## Arquitetura narrativa
+
+O motor deve permanecer independente de:
+
+- profissão;
+- nomes;
+- escola;
+- tecnologia;
+- React;
+- Next.js;
+- banco de dados.
+
+Cada trajetória é um pacote narrativo composto por módulos reutilizáveis. Um novo pacote pode representar, por exemplo:
+
+- jogador de futebol;
+- psicólogo;
+- arquiteto;
+- bombeiro;
+- desenvolvedor;
+- outra vida gratuita ou paga.
+
+O pacote deve declarar elenco por papéis, cenas, escolhas, efeitos, compromissos, memórias, condições, resultados e finais.
+
+## Limite atual
+
+A infraestrutura de pacote, módulos, identidade e efeitos é reutilizável. O conteúdo específico de cada profissão ainda precisa ser escrito, pesquisado e testado. Não se deve copiar cenas escolares trocando apenas nomes.
+
+## Critério de conclusão da adequação
+
+A adequação só estará concluída quando CI e E2E aprovarem:
+
+- geração e persistência do colega;
+- quatro históricos;
+- contexto “Quem é esta pessoa?”;
+- nomes únicos;
+- alimentação e transporte;
+- Educação Física;
+- aula vaga;
+- prova em dupla;
+- conflito social;
+- apresentação no horário;
+- eventos modulares;
+- quatro caminhos de formação;
+- migração do save anterior;
+- ausência de termos técnicos na interface.
