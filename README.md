@@ -112,6 +112,7 @@ O teste de modularidade cria e executa uma pequena vida de jogador de futebol co
 ## Documentação obrigatória
 
 - `docs/HANDOFF_CANONICAL.md`
+- `docs/PROJECT_STATUS.md`
 - `docs/PROLOGUE_CANONICAL.md`
 - `docs/NARRATIVE_PACKAGE_ARCHITECTURE.md`
 
@@ -119,7 +120,10 @@ O teste de modularidade cria e executa uma pequena vida de jogador de futebol co
 
 - Sprint 0: concluída;
 - Sprint 1: concluída;
-- Prólogo Canônico: implementado;
-- consolidação modular: em auditoria final no PR #7.
+- Prólogo Canônico: implementado e publicado;
+- arquitetura modular: concluída e integrada pelo PR #7;
+- deploy de produção: aprovado.
 
-O próximo passo de produto, depois da consolidação verde, é expandir os caminhos de formação e criar o catálogo de vidas/profissões.
+A execução definitiva `30113406692` aprovou instalação, lint, TypeScript, 37 testes, build, quatro auditorias e E2E. O commit de produção é `03646550a2cf75ab48ee9d56ee07a8028ae3c5fd`.
+
+O próximo passo de produto é expandir os caminhos de formação e criar o catálogo de vidas/profissões.
