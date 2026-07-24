@@ -43,16 +43,16 @@ export function validateNarrativePack(pack: NarrativePack): readonly NarrativeVa
     }
   }
 
-  for (const module of pack.modules) {
-    for (const node of module.nodes as readonly StoryNode[]) {
+  for (const narrativeModule of pack.modules) {
+    for (const node of narrativeModule.nodes as readonly StoryNode[]) {
       if (moduleNodeIds.has(node.id)) {
         issues.push({ code: "duplicate-module-node", message: `${node.id} aparece em mais de um módulo` });
       }
       moduleNodeIds.add(node.id);
-      if (node.moduleId && node.moduleId !== module.id) {
+      if (node.moduleId && node.moduleId !== narrativeModule.id) {
         issues.push({
           code: "module-mismatch",
-          message: `${node.id} declara ${node.moduleId}, mas está no módulo ${module.id}`
+          message: `${node.id} declara ${node.moduleId}, mas está no módulo ${narrativeModule.id}`
         });
       }
     }
