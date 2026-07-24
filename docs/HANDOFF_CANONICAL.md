@@ -1,55 +1,102 @@
 # Vidas Possíveis — Handoff Canônico Operacional
 
-**Versão:** 0.9.0  
+**Versão:** 1.0.0  
 **Data:** 24/07/2026  
-**Status:** Sprints 0 e 1 concluídas; Prólogo Canônico v1.0 implementado em arquitetura de pacotes e módulos.
+**Status:** Sprints 0 e 1 concluídas; Prólogo Canônico v1.0 implementado; arquitetura modular de pacotes consolidada e em auditoria final.
 
-Este arquivo é fonte obrigatória para qualquer novo chat ou agente que altere o projeto. O documento completo arquivado nas Fontes do projeto continua válido; este arquivo contém as regras operacionais que o código deve respeitar.
+Este arquivo é leitura obrigatória para qualquer novo chat ou agente que altere o projeto. Também devem ser consultados:
+
+- `docs/PROLOGUE_CANONICAL.md` para o conteúdo escolar;
+- `docs/NARRATIVE_PACKAGE_ARCHITECTURE.md` para novas vidas e profissões.
+
+Em caso de divergência, prevalece a decisão mais recente registrada explicitamente em documento canônico.
 
 ## 1. Visão do produto
 
-Vidas Possíveis é um RPG narrativo de vida, relações, tempo, formação e carreira. O jogador não escolhe apenas respostas: cada ação ocupa tempo, altera condições, cria memórias e pode reaparecer anos depois.
+Vidas Possíveis é um RPG narrativo sobre vida, relações, tempo, formação e carreira.
 
-O produto deve permitir várias trajetórias, inclusive vidas profissionais gratuitas ou pagas, sem duplicar o motor.
+Cada ação pode:
+
+- consumir tempo;
+- alterar atributos ou condições;
+- mudar dinheiro e reputação;
+- criar memórias;
+- aproximar ou afastar pessoas;
+- produzir consequência futura;
+- abrir ou fechar oportunidades.
+
+O produto deve suportar prólogos, profissões gratuitas e vidas pagas sem duplicar motor, persistência ou interface.
 
 ## 2. Arquitetura obrigatória
 
-O projeto é dividido em:
-
-- `packages/game-engine`: regras genéricas de estado, tempo, escolhas, efeitos, testes e relações;
-- `packages/narrative`: pacotes narrativos e validação de conteúdo;
+- `packages/game-engine`: regras universais do jogo;
+- `packages/narrative`: pacotes, módulos, cenas e validação;
 - `packages/persistence`: progresso local e futuro contrato de sincronização;
-- `apps/web`: apresentação e interação;
-- `docs`: regras canônicas e auditorias.
+- `apps/web`: interface genérica;
+- `docs`: regras, narrativas e auditorias.
 
-O motor não pode depender de escola, Bia, tecnologia, futebol ou qualquer profissão específica.
+O motor não pode conter:
 
-Conteúdo novo deve entrar como `NarrativePack`, composto por `NarrativeModule`s e nós. Exemplo: `school-prologue`, `profession-football`, `profession-psychology`.
+- nomes de NPCs;
+- cenas escolares;
+- matérias específicas;
+- locais de uma profissão;
+- textos narrativos;
+- condicionais por profissão.
 
-## 3. Estado e progresso
+Conteúdo novo entra como `NarrativePack`, composto por `NarrativeModule`s.
 
-O estado atual usa schema 3 e contém:
+Regra canônica:
 
-- perfil do jogador;
-- relógio e localização;
-- pacote e nó atuais;
+> Nova profissão significa novo pacote narrativo, não novo motor.
+
+## 3. Pacote narrativo
+
+Cada pacote declara:
+
+- id e versão;
+- nó inicial;
+- módulos e nós;
+- relógio e local iniciais;
+- dinheiro e reputação iniciais;
+- ajustes de atributos e condições;
+- conhecimentos próprios;
+- pessoas, nomes e memórias;
+- variáveis do cenário;
+- rótulos de locais, conhecimentos, flags e reputação;
+- renderização de texto;
+- caminhos finais.
+
+A interface consulta o pacote atual para mostrar nomes humanos. Ela não mantém catálogos próprios de matérias ou locais.
+
+## 4. Estado e progresso
+
+O schema atual é o 3 e contém:
+
+- jogador;
+- cenário e nó atual;
+- data, horário e local;
 - atributos;
-- condições momentâneas;
-- conhecimentos;
-- reputação e dinheiro;
+- condições;
+- conhecimentos do pacote;
+- reputação;
+- dinheiro;
 - flags;
 - pessoas e memórias;
 - nomes reservados;
-- variáveis do cenário;
-- histórico de decisões;
+- variáveis;
+- histórico;
 - consequências futuras;
-- seed determinística.
+- seed e índice determinísticos.
 
-Migrações devem preservar a identidade do personagem e explicar ao jogador quando uma narrativa precisar reiniciar por mudança canônica.
+Migrações devem:
 
-## 4. Atributos, condições e conhecimentos
+- preservar a identidade do jogador;
+- preservar o que for semanticamente compatível;
+- nunca fingir compatibilidade;
+- explicar ao jogador quando uma narrativa precisa recomeçar.
 
-### Atributos duradouros
+## 5. Atributos universais
 
 - Raciocínio;
 - Percepção;
@@ -58,53 +105,102 @@ Migrações devem preservar a identidade do personagem e explicar ao jogador qua
 - Vigor;
 - Agilidade.
 
-### Condições momentâneas
+Não criar atributo específico de profissão no motor sem provar que é universal.
+
+## 6. Condições momentâneas
 
 - Energia;
 - Estresse;
 - Saúde.
 
-### Conhecimentos aprendidos
+Energia não é Vigor. Uma pessoa vigorosa pode estar exausta.
 
-O pacote escolar inicia com:
+## 7. Conhecimentos
+
+Conhecimentos são definidos pelo pacote.
+
+O prólogo escolar declara:
 
 - Matemática;
 - Português;
 - Física;
 - Tecnologia.
 
-Pacotes profissionais podem declarar outros domínios futuramente. Raciocínio não é conhecimento; Vigor não é Energia; Reputação não é atributo pessoal.
+Uma vida de futebol pode declarar:
 
-## 5. Pessoas
+- Controle de bola;
+- Tática;
+- Finalização;
+- Preparação física.
 
-Existem três categorias narrativas:
+Psicologia, Arquitetura e Bombeiros podem declarar seus próprios conhecimentos sem alterar o motor.
+
+Raciocínio não substitui conhecimento aprendido.
+
+## 8. Locais
+
+Locais também são definidos pelo pacote.
+
+Exemplos escolares:
+
+- casa;
+- escola;
+- biblioteca;
+- transporte público;
+- shopping;
+- parque.
+
+Exemplos profissionais:
+
+- centro de treinamento;
+- vestiário;
+- clínica;
+- escritório de arquitetura;
+- quartel de bombeiros;
+- local de ocorrência.
+
+Criar novo local não pode exigir alteração no motor ou na interface.
+
+## 9. Pessoas e categorias
+
+Existem três categorias:
 
 - pessoa de cena;
 - pessoa conhecida;
 - pessoa importante.
 
-Categoria, papel e presença são separados. Uma pessoa pode ser conhecida, chefe e distante; importante, rival e ativa; ou conhecida, inativa e ainda guardada na memória.
+Categoria, papel e presença são separados.
 
-Toda pessoa nomeada e persistente utiliza somente:
+Uma pessoa pode ser:
+
+- conhecida, chefe e distante;
+- importante, rival e ativa;
+- conhecida, inativa e ainda guardada na memória.
+
+Pessoas afastadas não são apagadas.
+
+## 10. Indicadores de relacionamento
+
+Toda pessoa persistente utiliza somente:
 
 - Confiança;
 - Proximidade;
 - Tensão.
 
-Esses indicadores servem para colega, vizinho, esposa, chefe, rival ou familiar. Romance, lealdade, admiração e rivalidade são interpretações do papel, das memórias e dos três indicadores, não barras próprias nesta fase.
+Isso vale para colega, vizinho, cônjuge, chefe, rival ou familiar.
 
-Pessoas afastadas não são apagadas. O mesmo `personId` preserva nome, gênero, contexto, memórias e trajetória.
+Amor, lealdade, admiração, atração e rivalidade são interpretações do papel, das memórias e desses indicadores; não são barras próprias nesta fase.
 
-## 6. Valores e mudanças relacionais
+## 11. Valores iniciais e mudanças
 
-Não iniciar relações em 50 por padrão. Valores nascem do contexto.
+Não iniciar tudo em 50.
 
-Faixas de referência:
+Referências:
 
-- desconhecido: Confiança 5, Proximidade 0, Tensão 0;
-- recém-apresentado: 10, 5, 0;
-- colega de turma: aproximadamente 25–30, 15–20, 5;
-- amigo: aproximadamente 45–60, 45–60, 5–10.
+- desconhecido: 5 / 0 / 0;
+- recém-apresentado: 10 / 5 / 0;
+- colega de turma: aproximadamente 25–30 / 15–20 / 5;
+- amigo: aproximadamente 45–60 / 45–60 / 5–10.
 
 Mudanças típicas:
 
@@ -113,11 +209,11 @@ Mudanças típicas:
 - evento marcante: 8–15;
 - ruptura extrema: acima de 15 somente com justificativa.
 
-Nenhuma mudança grande pode existir apenas para preparar uma cena futura.
+Nenhum número pode mudar apenas para preparar uma cena futura.
 
-## 7. Memórias
+## 12. Memórias
 
-Números mostram como está a relação. Memórias explicam por quê.
+Os números mostram como está a relação. As memórias explicam por quê.
 
 Memórias podem registrar:
 
@@ -127,43 +223,61 @@ Memórias podem registrar:
 - humilhação;
 - reconciliação;
 - trabalho conjunto;
-- lazer compartilhado;
-- evento familiar;
-- evento acadêmico;
+- lazer;
+- família;
+- estudo;
 - romance.
 
-Toda consequência futura precisa apontar para uma escolha, pessoa ou memória de origem. Uma pessoa tratada mal pode voltar, mas não recebe vingança automática.
+Toda consequência futura deve apontar para escolha, pessoa ou memória de origem.
 
-## 8. Resolvedor de reencontros
+Uma pessoa tratada mal pode voltar, mas não recebe vingança automática.
 
-A vida inteira não será escrita antecipadamente. O modelo é híbrido:
+## 13. Reencontros
+
+A vida inteira não é escrita previamente.
+
+Modelo híbrido:
 
 1. marcos fixos para personagens centrais;
-2. papéis narrativos abertos, como “pessoa capaz de indicar uma vaga”;
-3. seleção da pessoa mais coerente no histórico;
-4. criação de pessoa nova quando ninguém antigo servir.
+2. papéis abertos, como “pessoa capaz de indicar uma vaga”;
+3. busca de pessoa coerente no histórico;
+4. criação de pessoa nova quando ninguém servir.
 
-Elegibilidade considera idade, localização, profissão, disponibilidade, memórias, Confiança, Proximidade, Tensão e tempo desde a última aparição.
+Elegibilidade considera:
 
-NPCs usam trajetória resumida por marcos, não simulação diária completa.
+- idade;
+- localização;
+- profissão;
+- disponibilidade;
+- memória;
+- Confiança;
+- Proximidade;
+- Tensão;
+- tempo desde a última aparição.
 
-## 9. Gênero e romance
+NPCs usam trajetória resumida por marcos, não uma vida diária completa.
 
-Gênero do personagem e preferência afetiva são conceitos separados.
+## 14. Gênero e romance
 
-Preferências disponíveis:
+Gênero e preferência afetiva são conceitos separados.
+
+Preferências:
 
 - mulheres;
 - homens;
 - homens e mulheres;
-- sem interesse romântico;
+- sem romance;
 - ainda não definido.
 
-Papéis neutros aceitam homem ou mulher independentemente do jogador. Compatibilidade não cria romance. Romance depende de convivência, reciprocidade, consentimento, idade e contexto. O jogador pode terminar qualquer trajetória sem romance.
+Papéis neutros aceitam qualquer gênero.
 
-## 10. Escalação e nomes
+Compatibilidade não cria romance. Romance exige convivência, reciprocidade, consentimento, idade e contexto.
 
-NPCs variáveis são criados por papel narrativo. A geração é determinística pela seed e ocorre uma vez.
+O jogador pode concluir qualquer vida sem romance e sem punição.
+
+## 15. Escalação e nomes
+
+NPCs variáveis são criados por papel narrativo e seed.
 
 Cada pessoa recebe:
 
@@ -175,51 +289,54 @@ Cada pessoa recebe:
 - situação atual;
 - personalidade;
 - relação inicial;
-- possíveis marcos futuros.
+- possíveis marcos.
 
-O nome é reservado durante toda a vida. Outra pessoa não pode reutilizá-lo. Uma reaparição deve reutilizar o mesmo `personId`.
+O nome é reservado durante toda a vida.
 
-## 11. Contexto prévio
+Outra pessoa não pode reutilizá-lo. Um retorno usa o mesmo `personId`.
 
-Quando o personagem já conhece alguém, a interface deve oferecer “Quem é esta pessoa?” antes de escolhas relevantes.
+## 16. Contexto prévio
 
-O contexto deve explicar:
+Quando o jogador já conhece alguém, deve existir “Quem é esta pessoa?” antes de decisões relevantes.
+
+O contexto informa:
 
 - como se conhecem;
-- ajuda ou conflitos anteriores;
+- ajuda ou conflito anterior;
 - impressão atual;
 - motivo de presença na cena.
 
-Nenhuma memória materialmente importante pode ficar escondida do jogador e depois ser usada para julgá-lo.
+Nenhuma memória material pode ficar escondida e depois ser usada para julgar uma decisão.
 
-Desconhecidos reais, como um motorista encontrado pela primeira vez, não precisam de passado inventado.
+Desconhecidos reais não precisam de passado inventado.
 
-## 12. Tempo
+## 17. Tempo
 
-O relógio é fonte única da verdade.
+O relógio é a fonte única da verdade.
 
-Regras obrigatórias:
+Regras:
 
 - diferenças calculadas pelo motor;
 - relógio nunca retrocede;
 - deslocamentos ocupam tempo;
 - sono e refeições ocupam tempo;
-- atividade precisa ser compatível com horário e local;
-- chegar cedo cria espera ou preparação;
-- chegar tarde cria atraso;
-- compromissos podem estar futuros, em andamento, atrasados, perdidos, remarcados ou cancelados;
-- atividades incompatíveis não podem ocorrer simultaneamente.
+- atividade combina com horário e local;
+- chegada antecipada cria espera ou preparação;
+- atraso produz estado e consequência;
+- atividades incompatíveis não se sobrepõem.
 
-Casos mínimos de teste:
+Casos mínimos:
 
 - 05:40 → 08:00 = 140 minutos;
 - segunda 18:10 → terça 05:40 = 690 minutos;
 - 06:35 → 10:30 = 235 minutos;
 - 08:20 para compromisso às 08:00 = atraso de 20 minutos.
 
-## 13. Construção narrativa
+Às 06:35, com apresentação às 08:00, a atividade não pode ser “Apresentar o trabalho”.
 
-Todo evento precisa declarar ou implicar de modo testável:
+## 18. Construção narrativa
+
+Todo evento deve declarar ou tornar testável:
 
 - data ou janela;
 - horário;
@@ -232,64 +349,120 @@ Todo evento precisa declarar ou implicar de modo testável:
 - efeitos;
 - pessoas;
 - memórias;
-- consequências imediatas e futuras;
+- consequências;
 - destinos.
 
-Nenhuma escolha consome tempo silenciosamente. Fofoca, castigo, briga, oportunidade ou retorno precisam de origem rastreável.
+Nenhuma escolha consome tempo silenciosamente.
+
+Fofoca, castigo, briga, oportunidade e retorno precisam de origem rastreável.
 
 Plausibilidade tem prioridade sobre surpresa.
 
-## 14. Modularidade
+## 19. Módulos recomendados
 
-A unidade de publicação é `NarrativePack`.
-
-Um pacote contém:
-
-- id e versão;
-- nó de entrada;
-- módulos;
-- mapa de nós;
-- criação de setup;
-- renderização de variáveis;
-- validação genérica.
-
-Módulos recomendados e reutilizáveis:
-
+- rotina;
 - deslocamento;
-- avaliação;
 - treino ou prática;
-- evento social;
-- evento familiar;
+- avaliação;
+- trabalho;
+- família;
+- social;
 - conflito;
 - relacionamento;
+- saúde;
+- finanças;
 - oportunidade;
+- transição;
 - encerramento.
 
-Conteúdo profissional não deve adicionar `if profissão === ...` ao motor. Deve compor módulos em um novo pacote.
+Módulos podem ser reaproveitados quando o comportamento é realmente equivalente. Textos e dilemas específicos continuam sendo autoria própria.
 
-## 15. Limites atuais
+## 20. Prova de modularidade
 
-A arquitetura já separa motor e conteúdo, mas ainda existem vocabulários fechados para localização e conhecimento na versão atual. Antes de dezenas de profissões, esses catálogos deverão se tornar configuráveis por pacote ou ampliar-se por extensões de domínio.
+A suíte automatizada contém um pacote independente de jogador de futebol.
 
-Também faltam:
+Ele declara:
 
-- catálogo de pacotes na interface;
+- `training_ground` e `locker_room`;
+- Controle de bola e Tática;
+- reputação no clube;
+- treino com duração de duas horas;
+- consumo de Energia;
+- evolução de Controle de bola;
+- final no vestiário.
+
+Esse pacote executa no mesmo motor sem importar o prólogo escolar.
+
+## 21. O que é reaproveitado em novas profissões
+
+Integralmente:
+
+- motor;
+- save;
+- relógio;
+- efeitos;
+- atributos e condições;
+- dinheiro e reputação;
+- pessoas e memórias;
+- geração determinística;
+- consequências futuras;
+- testes de habilidade;
+- interface;
+- validação e auditorias.
+
+Precisa ser criado para cada profissão:
+
+- pesquisa;
+- fases;
+- conhecimentos;
+- locais;
+- personagens e instituições;
+- eventos;
+- escolhas;
+- progressão;
+- riscos;
+- textos;
+- balanceamento.
+
+## 22. Pendências futuras
+
+A base modular não encerra todas as funcionalidades do produto.
+
+Ainda faltam:
+
+- catálogo de vidas e profissões;
+- seleção de pacote na interface;
 - controle de acesso gratuito/pago;
-- resolvedor de reencontros executável;
-- biblioteca compartilhada de contratos, salários, lesões, certificações e rotinas profissionais;
+- resolvedor executável de reencontros;
+- biblioteca crescente de módulos profissionais;
 - sincronização entre dispositivos.
 
-## 16. Documentos obrigatórios
+Essas pendências não exigem reescrever o motor.
 
-Antes de alterar o prólogo, consultar também `docs/PROLOGUE_CANONICAL.md`.
+## 23. Critérios de aceite de um pacote
 
-As auditorias devem impedir:
+Um pacote só pode ser publicado quando:
 
-- nomes fora do banco autorizado;
-- nomes duplicados;
-- contexto ausente;
-- atividade antecipada;
-- tempo retrocedendo;
-- destinos inexistentes;
-- pacote sem módulo;
-- termos técnicos na experiência do jogador.
+- possui id, versão e nó inicial;
+- todos os nós pertencem a módulos;
+- todos os destinos existem;
+- nós não finais possuem escolhas;
+- conhecimentos e locais têm rótulos;
+- não há termos técnicos visíveis;
+- não há regressão temporal;
+- atividades e compromissos são coerentes;
+- rotas principais são alcançáveis;
+- save preserva identidade;
+- testes, auditorias, build e E2E passam.
+
+## 24. Estado atual
+
+- Sprint 0: concluída;
+- Sprint 1: concluída;
+- Prólogo Canônico: implementado;
+- pacote escolar: jogável;
+- atributos, condições e conhecimentos: separados;
+- pessoas e memórias: persistentes;
+- pacote profissional independente: executado em teste;
+- modularidade de locais e conhecimentos: implementada;
+- PR de consolidação: deve permanecer sem merge até CI e Vercel verdes.
