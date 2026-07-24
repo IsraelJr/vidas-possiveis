@@ -125,7 +125,7 @@ for (const marker of [
 
 const architecture = await readFile("docs/NARRATIVE_PACKAGE_ARCHITECTURE.md", "utf8");
 for (const marker of [
-  "Nova profissão significa novo pacote",
+  "Nova profissão significa",
   "Controle de bola",
   "A interface não mantém catálogos próprios"
 ]) {
