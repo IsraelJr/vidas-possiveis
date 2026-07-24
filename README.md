@@ -1,6 +1,6 @@
 # Vidas Possíveis
 
-RPG narrativo de vida e carreira. As Sprints 0 e 1 entregam a fundação técnica e um prólogo escolar completo, com escolhas condicionais, relações, passagem do tempo, consequências futuras e quatro primeiros caminhos de formação.
+RPG narrativo de vida, relações, formação e carreira. O projeto possui um prólogo escolar jogável e uma arquitetura de pacotes que permite criar novas vidas profissionais sem reescrever o motor.
 
 ## Stack
 
@@ -14,11 +14,11 @@ RPG narrativo de vida e carreira. As Sprints 0 e 1 entregam a fundação técnic
 ## Estrutura
 
 ```text
-apps/web                 Interface Next.js
-packages/game-engine     Regras puras do domínio
-packages/narrative       Conteúdo e validação narrativa
+apps/web                 Interface genérica
+packages/game-engine     Tempo, estado, escolhas, efeitos, pessoas e memórias
+packages/narrative       Pacotes, módulos, cenas e validação
 packages/persistence     Progresso local e contratos de persistência
-docs                     Referência canônica, políticas e auditorias
+docs                     Regras canônicas e auditorias
 ```
 
 ## Desenvolvimento
@@ -40,43 +40,86 @@ pnpm test
 pnpm build
 pnpm audit:sprint0
 pnpm audit:sprint1
+pnpm audit:prologue
 pnpm audit:actions
 pnpm test:e2e
 ```
 
-A CI executa essas verificações uma vez por pull request e na `main`, com cancelamento de execuções substituídas, instalação congelada e sem cron ou tentativas baseadas em commits.
+A CI executa uma validação por pull request e na `main`, cancela execuções substituídas, usa instalação congelada e não possui cron de negócio.
 
-## Entrega funcional atual
+## Prólogo escolar
 
-- criação da vida com três origens socioeconômicas;
-- sequência de 15 cenas escolares;
-- relógio com data, horário, local, atividade, compromisso e tempo restante;
-- acesso desigual a recursos sem atribuir inteligência à origem;
-- conflito e relação persistente com Bia;
-- confiança, proximidade e tensão;
-- preparação, descanso e deslocamento antes da apresentação;
-- teste de habilidade determinístico que altera a história;
-- consequência futura de uma escolha;
-- atributos, dinheiro, flags e efeitos imutáveis;
+- personagem de classe média com 17 anos;
+- colega principal sorteado deterministicamente;
+- nomes Tamires, Solange, Paula, Julia, Miguel, Israel, Luiz, Rodrigo e Carlos;
+- quatro históricos possíveis;
+- nomes reservados durante toda a vida;
+- contexto “Quem é esta pessoa?”;
+- merenda e lanchonete;
+- ônibus e carro por aplicativo;
+- Educação Física;
+- aula vaga ou professor substituto;
+- prova em dupla;
+- trabalho em grupo e apresentação;
+- convites sociais e responsabilidades familiares;
+- intrigas, conflitos e relações;
+- eventos modulares ao longo do ano;
 - quatro caminhos iniciais de formação;
-- progresso automático e retomada após recarregar;
-- migração do progresso criado na Sprint 0;
-- linguagem voltada ao jogador, sem termos de desenvolvimento.
+- progresso automático e migração de saves anteriores.
+
+## Domínio canônico
+
+### Atributos
+
+Raciocínio, Percepção, Comunicação, Autocontrole, Vigor e Agilidade.
+
+### Condições
+
+Energia, Estresse e Saúde.
+
+### Relacionamentos
+
+Confiança, Proximidade e Tensão para pessoas de cena persistentes, conhecidas e importantes.
+
+### Conhecimentos e locais
+
+São declarados por cada pacote narrativo. O motor e a interface não possuem listas fechadas de matérias ou ambientes profissionais.
+
+## Pacotes narrativos
+
+Um `NarrativePack` contém:
+
+- id e versão;
+- setup inicial;
+- módulos e cenas;
+- conhecimentos e locais;
+- rótulos de apresentação;
+- pessoas e variáveis;
+- caminhos finais.
+
+O teste de modularidade cria e executa uma pequena vida de jogador de futebol com Centro de treinamento, Vestiário, Controle de bola e Tática, usando o mesmo motor do prólogo escolar.
 
 ## Decisões arquiteturais
 
-- O motor não depende de React, Next.js, Firebase ou DOM.
-- O relógio é parte da mecânica e permanece visível.
-- O conteúdo narrativo é validado antes da execução.
-- O progresso inicial usa IndexedDB, com contrato preparado para sincronização futura.
-- As gravações locais são executadas em ordem para impedir que um estado antigo substitua uma decisão recente.
-- Rolagens são determinísticas por seed para permitir testes e auditoria.
-- A CI usa permissões somente de leitura e gera diagnóstico apenas em falhas.
+- O motor não depende de React, Next.js, Firebase, DOM, escola ou profissão.
+- A interface consulta o pacote atual para exibir locais, conhecimentos e reputação.
+- O relógio nunca retrocede e toda ação relevante ocupa tempo.
+- O conteúdo é validado antes da execução.
+- A persistência usa IndexedDB e serializa gravações.
+- Geração e testes de habilidade são determinísticos por seed.
+- Nova profissão significa novo pacote, não novo motor.
+
+## Documentação obrigatória
+
+- `docs/HANDOFF_CANONICAL.md`
+- `docs/PROLOGUE_CANONICAL.md`
+- `docs/NARRATIVE_PACKAGE_ARCHITECTURE.md`
 
 ## Estado
 
-**Sprint 1 concluída e integrada à `main` em 23/07/2026.**
+- Sprint 0: concluída;
+- Sprint 1: concluída;
+- Prólogo Canônico: implementado;
+- consolidação modular: em auditoria final no PR #7.
 
-A execução `30015682906` aprovou instalação congelada, lint, typecheck, 26 testes unitários e de integridade, build Next.js, três auditorias, instalação do Chromium e a jornada E2E completa.
-
-Próxima etapa recomendada: Sprint 2 — desenvolver os diferentes caminhos de formação e fazê-los convergir para a primeira oportunidade em tecnologia.
+O próximo passo de produto, depois da consolidação verde, é expandir os caminhos de formação e criar o catálogo de vidas/profissões.
