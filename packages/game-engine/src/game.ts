@@ -30,7 +30,7 @@ export function createGameState(player: PlayerProfile, setup: GameScenarioSetup)
     currentNodeId: setup.entryNodeId,
     attributes: createInitialAttributes(setup.attributeAdjustments),
     conditions: createInitialConditions(setup.conditionAdjustments),
-    knowledge: createInitialKnowledge(setup.initialKnowledge),
+    knowledge: createInitialKnowledge(setup.initialKnowledge ?? {}),
     reputation: clampValue(setup.initialReputation ?? 10),
     moneyCents: setup.moneyCents,
     flags: setup.flags,
