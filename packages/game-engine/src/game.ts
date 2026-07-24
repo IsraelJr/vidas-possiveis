@@ -1,14 +1,18 @@
 import { compareClocks } from "./clock";
 import { conditionsAreMet, evaluateCondition } from "./conditions";
 import { applyEffects } from "./effects";
-import { createPrologueGroupMate } from "./identity";
 import { runSkillCheck } from "./skill-check";
-import { createInitialStats } from "./stats";
+import {
+  clampValue,
+  createInitialAttributes,
+  createInitialConditions,
+  createInitialKnowledge
+} from "./stats";
 import type {
   AppliedChange,
+  GameScenarioSetup,
   GameState,
   PlayerProfile,
-  RelationshipState,
   SkillModifier,
   StoryChoice,
   StoryChoiceAvailability,
@@ -16,90 +20,71 @@ import type {
   TriggeredConsequence
 } from "./types";
 
-const START_CLOCK = { date: "2026-02-16", minuteOfDay: 6 * 60 + 10 } as const;
-
-export function createGameState(player: PlayerProfile, narrativePackageId = "school-prologue-br-v1"): GameState {
-  const generated = createPrologueGroupMate(player, START_CLOCK);
+export function createGameState(player: PlayerProfile, setup: GameScenarioSetup): GameState {
   return {
     schemaVersion: 3,
-    contentVersion: "prologue-1.0",
-    narrativePackageId,
+    contentVersion: setup.contentVersion,
     player,
-    clock: START_CLOCK,
-    location: "home",
-    currentNodeId: "prologue.morning",
-    stats: createInitialStats(player.origin),
-    moneyCents: player.origin === "low_income" ? 3_000 : player.origin === "middle_income" ? 12_000 : 30_000,
-    flags: {
-      hasComputer: player.origin !== "low_income",
-      groupMateHelpedBefore: generated.historyId === "helped-before",
-      groupMateProvokedBefore: generated.historyId === "provoked-before",
-      groupMateResponsible: generated.historyId === "usually-responsible",
-      groupMateRepeatedDelays: generated.historyId === "repeated-delays"
-    },
-    relationships: { [generated.relationship.id]: generated.relationship },
-    identityRegistry: { [generated.registry.displayName.toLocaleLowerCase("pt-BR")]: generated.registry },
+    clock: setup.clock,
+    location: setup.location,
+    currentNodeId: setup.entryNodeId,
+    attributes: createInitialAttributes(setup.attributeAdjustments),
+    conditions: createInitialConditions(setup.conditionAdjustments),
+    knowledge: createInitialKnowledge(setup.initialKnowledge ?? {}),
+    reputation: clampValue(setup.initialReputation ?? 10),
+    moneyCents: setup.moneyCents,
+    flags: setup.flags,
+    people: setup.people,
+    usedNames: setup.usedNames,
+    scenario: { id: setup.id, variables: setup.variables },
     rollIndex: 0,
-    seed: `${player.id}:${player.origin}`,
+    seed: `${player.id}:${setup.id}`,
     history: [],
     scheduledConsequences: []
   };
 }
 
-function legacyBia(): RelationshipState {
+export function readPersistedPlayerProfile(state: unknown): PlayerProfile | null {
+  if (!state || typeof state !== "object") return null;
+  const candidate = state as { readonly player?: Partial<PlayerProfile> };
+  const player = candidate.player;
+  if (!player || typeof player.id !== "string" || typeof player.name !== "string") return null;
+
   return {
-    id: "school.groupMate",
-    name: "Bia",
-    gender: "woman",
-    role: "Colega da escola",
-    category: "known",
-    presence: "active",
-    contextSummary: "Bia estudou com você e participou do primeiro trabalho em grupo desta vida.",
-    trust: 30,
-    affection: 20,
-    conflict: 5,
-    memories: []
+    id: player.id,
+    name: player.name,
+    presentation: player.presentation === "woman" ? "woman" : "man",
+    origin: "middle_income",
+    romanticPreference:
+      player.romanticPreference === "women" ||
+      player.romanticPreference === "men" ||
+      player.romanticPreference === "both" ||
+      player.romanticPreference === "none"
+        ? player.romanticPreference
+        : "undefined"
   };
 }
 
-export function migrateGameState(state: GameState): GameState {
-  const candidate = state as unknown as Partial<GameState> & {
-    readonly schemaVersion?: number;
-    readonly relationships?: Readonly<Record<string, RelationshipState>>;
-  };
+export function migrateGameState(state: unknown, setup: GameScenarioSetup): GameState {
+  const player = readPersistedPlayerProfile(state);
+  if (!player) throw new Error("O progresso salvo não contém um personagem válido.");
 
-  if (candidate.schemaVersion === 3 && candidate.identityRegistry && candidate.narrativePackageId) {
+  const candidate = state as Partial<GameState>;
+  if (
+    candidate.schemaVersion === 3 &&
+    candidate.contentVersion === setup.contentVersion &&
+    candidate.scenario?.id === setup.id
+  ) {
     return candidate as GameState;
   }
 
-  const oldRelationships = candidate.relationships ?? {};
-  const previous = oldRelationships.bia ?? oldRelationships["school.groupMate"];
-  const migratedPerson = previous
-    ? {
-        ...legacyBia(),
-        name: previous.name,
-        trust: previous.trust,
-        affection: previous.affection,
-        conflict: previous.conflict
-      }
-    : legacyBia();
-
+  const migrated = createGameState(player, setup);
   return {
-    ...(candidate as GameState),
-    schemaVersion: 3,
-    contentVersion: "prologue-1.0",
-    narrativePackageId: "school-prologue-br-v1",
-    currentNodeId: candidate.currentNodeId?.startsWith("ending.") ? candidate.currentNodeId : "prologue.morning",
-    relationships: { "school.groupMate": migratedPerson },
-    identityRegistry: {
-      [migratedPerson.name.toLocaleLowerCase("pt-BR")]: {
-        personId: migratedPerson.id,
-        displayName: migratedPerson.name,
-        gender: migratedPerson.gender,
-        reservedAt: candidate.clock ?? START_CLOCK
-      }
-    },
-    scheduledConsequences: candidate.scheduledConsequences ?? []
+    ...migrated,
+    flags: {
+      ...migrated.flags,
+      migratedFromEarlierPrologue: true
+    }
   };
 }
 
@@ -111,38 +96,70 @@ export function getChoiceAvailability(state: GameState, node: StoryNode): readon
 }
 
 export function getAvailableChoices(state: GameState, node: StoryNode): readonly StoryChoice[] {
-  return getChoiceAvailability(state, node).filter((item) => item.available).map((item) => item.choice);
+  return getChoiceAvailability(state, node)
+    .filter((availability) => availability.available)
+    .map((availability) => availability.choice);
 }
 
-function processDueConsequences(state: GameState): { readonly state: GameState; readonly changes: readonly AppliedChange[]; readonly triggered: readonly TriggeredConsequence[] } {
+function processDueConsequences(state: GameState): {
+  readonly state: GameState;
+  readonly changes: readonly AppliedChange[];
+  readonly triggered: readonly TriggeredConsequence[];
+} {
   const due = state.scheduledConsequences.filter((item) => compareClocks(item.triggerAt, state.clock) <= 0);
   if (due.length === 0) return { state, changes: [], triggered: [] };
 
-  let nextState: GameState = { ...state, scheduledConsequences: state.scheduledConsequences.filter((item) => compareClocks(item.triggerAt, state.clock) > 0) };
+  let nextState: GameState = {
+    ...state,
+    scheduledConsequences: state.scheduledConsequences.filter((item) => compareClocks(item.triggerAt, state.clock) > 0)
+  };
   const changes: AppliedChange[] = [];
   const triggered: TriggeredConsequence[] = [];
+
   for (const consequence of due) {
     const result = applyEffects(nextState, consequence.effects, { sourceChoiceId: consequence.sourceChoiceId });
     nextState = result.state;
     changes.push(...result.changes);
-    triggered.push({ id: consequence.id, title: consequence.title, text: consequence.text, changes: result.changes });
+    triggered.push({
+      id: consequence.id,
+      title: consequence.title,
+      text: consequence.text,
+      changes: result.changes
+    });
   }
+
   return { state: nextState, changes, triggered };
 }
 
 function buildSkillModifiers(state: GameState, choice: StoryChoice): readonly SkillModifier[] {
   if (!choice.skillCheck) return [];
   const modifiers: SkillModifier[] = [
-    { label: choice.skillCheck.stat, value: Math.round((state.stats[choice.skillCheck.stat] - 50) / 5) },
-    { label: "energy", value: Math.round((state.stats.energy - 50) / 10) },
-    { label: "stress", value: -Math.round(state.stats.stress / 20) }
+    {
+      label: choice.skillCheck.attribute,
+      value: Math.round((state.attributes[choice.skillCheck.attribute] - 50) / 5)
+    },
+    {
+      label: "energy",
+      value: Math.round((state.conditions.energy - 50) / 10)
+    },
+    {
+      label: "stress",
+      value: -Math.round(state.conditions.stress / 20)
+    }
   ];
-  for (const bonus of choice.skillCheck.bonusFlags) if (state.flags[bonus.flag] === true) modifiers.push({ label: bonus.label, value: bonus.value });
+
+  for (const bonus of choice.skillCheck.bonusFlags) {
+    if (state.flags[bonus.flag] === true) modifiers.push({ label: bonus.label, value: bonus.value });
+  }
+
   return modifiers;
 }
 
 export function chooseStoryOption(state: GameState, node: StoryNode, choiceId: string): GameState {
-  if (node.id !== state.currentNodeId) throw new Error(`Nó atual é ${state.currentNodeId}, mas foi recebido ${node.id}.`);
+  if (node.id !== state.currentNodeId) {
+    throw new Error(`Nó atual é ${state.currentNodeId}, mas foi recebido ${node.id}.`);
+  }
+
   const choice = node.choices.find((candidate) => candidate.id === choiceId);
   if (!choice) throw new Error(`Escolha inexistente: ${choiceId}`);
   if (!conditionsAreMet(state, choice.conditions)) throw new Error(`Escolha indisponível: ${choiceId}`);
@@ -178,8 +195,14 @@ export function chooseStoryOption(state: GameState, node: StoryNode, choiceId: s
     decidedAt: state.clock,
     changes,
     ...(skillCheckResult ? { skillCheck: skillCheckResult } : {}),
-    ...(consequenceResult.triggered.length > 0 ? { triggeredConsequences: consequenceResult.triggered } : {})
+    ...(consequenceResult.triggered.length > 0
+      ? { triggeredConsequences: consequenceResult.triggered }
+      : {})
   };
 
-  return { ...nextState, currentNodeId: nextNodeId, history: [...state.history, historyEntry] };
+  return {
+    ...nextState,
+    currentNodeId: nextNodeId,
+    history: [...state.history, historyEntry]
+  };
 }

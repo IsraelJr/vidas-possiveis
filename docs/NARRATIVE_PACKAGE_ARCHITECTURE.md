@@ -1,145 +1,217 @@
-# Arquitetura de Pacotes Narrativos
+# Arquitetura Canônica de Pacotes Narrativos
 
-## Objetivo
+**Versão:** 1.0.0  
+**Data:** 24/07/2026  
+**Status:** contrato implementado e coberto por testes automatizados.
 
-Permitir que o mesmo motor execute vidas e profissões diferentes sem conhecer o conteúdo específico delas.
+## 1. Objetivo
 
-## Camadas
+Permitir que o mesmo motor execute prólogos, vidas profissionais gratuitas e conteúdos pagos sem conhecer escola, futebol, psicologia, arquitetura, bombeiros ou qualquer profissão específica.
+
+Modularidade não significa trocar palavras em um texto genérico. Cada profissão continua exigindo pesquisa, autoria, balanceamento e testes próprios. O que não pode ser refeito é a infraestrutura.
+
+## 2. Camadas
 
 ### Motor de jogo
 
-Responsável por:
+`packages/game-engine` é responsável somente por:
 
-- tempo;
-- condições;
-- efeitos;
-- dinheiro;
-- atributos;
-- relações;
-- consequências futuras;
+- relógio, datas e duração;
+- condições e escolhas;
+- efeitos imediatos e futuros;
+- atributos universais;
+- condições momentâneas;
+- conhecimentos declarados pelo pacote;
+- dinheiro e reputação;
+- pessoas, relações e memórias;
 - testes de habilidade;
-- identidade persistente;
-- migração de save.
+- estado e migração.
 
-O motor não deve importar nomes, profissões, escola ou textos narrativos.
+O motor não pode conter:
+
+- nomes de NPCs;
+- textos narrativos;
+- matérias escolares;
+- locais de uma profissão;
+- regras exclusivas de uma carreira;
+- condicionais como `profissão === futebol`.
 
 ### Pacote narrativo
 
-Declara:
+Um `NarrativePack` declara:
 
 - identificador e versão;
 - nó inicial;
-- módulos;
-- cenas;
-- compromissos;
-- escolhas;
-- condições;
-- efeitos;
-- papéis de pessoas;
-- resultados e finais.
+- módulos e cenas;
+- criação do cenário inicial;
+- conhecimentos iniciais;
+- locais;
+- pessoas e variáveis;
+- rótulos de apresentação;
+- regras de renderização;
+- finais.
 
 ### Módulos
 
-Agrupam eventos reutilizáveis ou substituíveis, como:
+Um pacote é composto por `NarrativeModule`s. Exemplos:
 
 - rotina;
-- formação;
+- deslocamento;
+- treino ou prática;
+- avaliação;
 - trabalho;
-- conflito;
 - família;
+- evento social;
+- conflito;
 - relacionamento;
 - saúde;
 - finanças;
 - oportunidade;
-- avaliação;
-- transição de carreira.
+- transição de carreira;
+- encerramento.
+
+Módulos podem ser compartilhados quando o comportamento é realmente igual, mas textos e consequências devem permanecer coerentes com o contexto.
 
 ### Interface
 
-Renderiza qualquer pacote usando os mesmos componentes:
+`apps/web` renderiza qualquer pacote por meio dos mesmos componentes:
 
 - relógio;
-- cena;
-- escolhas;
-- contexto de pessoa;
-- consequências;
-- estado atual;
-- relações.
+- local e atividade;
+- compromisso;
+- cena e escolhas;
+- contexto de pessoas;
+- mudanças;
+- atributos e condições;
+- conhecimentos do pacote;
+- reputação nomeada pelo pacote;
+- relações e memórias.
 
-## Criação de uma nova profissão
+A interface não mantém catálogos próprios de matérias ou locais. Ela recebe esses rótulos do pacote atual.
 
-Uma nova vida profissional não exige reescrever o motor, a persistência ou a interface.
+## 3. Elementos universais e configuráveis
 
-Exige criar um novo pacote com:
+### Universais
 
-1. pesquisa e regras reais da profissão;
-2. fases da trajetória;
-3. módulos específicos;
-4. elenco por papéis;
-5. escolhas e consequências;
-6. testes de integridade;
-7. simulações de rotas;
-8. textos próprios.
-
-## O que pode ser reaproveitado
-
-- relógio e compromissos;
-- deslocamentos;
-- condições e efeitos;
+- Raciocínio;
+- Percepção;
+- Comunicação;
+- Autocontrole;
+- Vigor;
+- Agilidade;
+- Energia;
+- Estresse;
+- Saúde;
+- Confiança;
+- Proximidade;
+- Tensão;
 - dinheiro;
-- energia, estresse e saúde;
-- relações e memórias;
-- identidade e nomes;
+- tempo;
+- reputação, cujo nome visível depende do pacote.
+
+### Configuráveis pelo pacote
+
+- conhecimentos;
+- locais;
+- nomes visíveis dos conhecimentos;
+- nome visível da reputação;
+- flags narrativas;
+- elenco;
+- calendário;
+- dinheiro inicial;
+- ajustes iniciais;
+- eventos e finais.
+
+## 4. Criação de uma nova profissão
+
+Para criar uma vida de jogador de futebol, psicólogo, arquiteto ou bombeiro, não se altera o motor.
+
+O trabalho necessário é:
+
+1. pesquisar a trajetória real;
+2. definir fases e marcos;
+3. declarar conhecimentos profissionais;
+4. declarar locais;
+5. criar papéis de pessoas e instituições;
+6. escrever módulos e cenas;
+7. configurar tempo, renda, desgaste e riscos;
+8. registrar o pacote;
+9. validar destinos e coerência;
+10. simular rotas e executar E2E.
+
+## 5. Prova automatizada: jogador de futebol
+
+A suíte `packages/narrative/tests/modularity.test.ts` cria e executa um pacote que não importa o prólogo escolar.
+
+Esse pacote:
+
+- inicia em `training_ground`;
+- exibe o local como “Centro de treinamento”;
+- declara `ball_control` e `tactics`;
+- exibe “Controle de bola” e “Tática”;
+- reduz Energia;
+- aumenta Controle de bola;
+- avança duas horas;
+- muda para `locker_room`;
+- encerra no vestiário.
+
+A execução usa o mesmo `createGameState`, `chooseStoryOption`, relógio, efeitos e tipos usados pelo prólogo.
+
+## 6. Reaproveitamento real
+
+Uma nova profissão reaproveita integralmente:
+
+- motor;
+- save;
+- relógio;
+- efeitos;
+- atributos e condições;
+- dinheiro;
+- reputação;
+- pessoas e memórias;
+- geração determinística;
 - consequências futuras;
 - testes de habilidade;
-- componentes de interface;
-- save e migração;
-- auditorias estruturais;
-- resolvedor futuro de reencontros.
+- validação de pacotes;
+- componentes da interface;
+- auditorias estruturais.
 
-## O que precisa ser criado para cada profissão
+Ela não reaproveita automaticamente:
 
-- contexto profissional;
-- eventos autênticos;
-- conhecimentos específicos;
+- pesquisa profissional;
+- textos;
+- dilemas autênticos;
 - progressão de carreira;
-- riscos e dilemas;
+- valores de salário;
+- riscos específicos;
 - personagens e instituições típicos;
-- critérios de sucesso e fracasso;
-- textos narrativos;
-- balanceamento de tempo, renda e desgaste.
+- balanceamento.
 
-## Exemplo: jogador de futebol
+## 7. Catálogo e monetização
 
-Pode reaproveitar o motor e módulos genéricos, mas precisa de conteúdo próprio:
+A arquitetura suporta vários pacotes, mas a tela de catálogo e as regras de acesso gratuito/pago ainda são uma camada futura.
 
-- peneira;
-- categorias de base;
-- treinos;
-- escola versus esporte;
-- empresário;
-- contrato;
-- banco de reservas;
-- lesão;
-- transferência;
-- imprensa;
-- torcida;
-- aposentadoria.
+A inclusão futura deve selecionar um `NarrativePack` e chamar `pack.createSetup(player)`. Não deve duplicar `GameShell`, persistência ou motor.
 
-## Exemplo: psicologia
+## 8. Critérios de aceite de um pacote
 
-- vestibular ou bolsa;
-- estágio;
-- supervisão;
-- ética profissional;
-- clínica;
-- concurso;
-- especialização;
-- desgaste emocional;
-- construção de clientela.
+Um pacote só pode ser publicado quando:
 
-## Regra de qualidade
+- possui id e versão;
+- possui nó inicial existente;
+- todos os nós pertencem a módulos;
+- nenhum destino está ausente;
+- nós não finais possuem escolhas;
+- conhecimentos e locais têm rótulos;
+- não há termos técnicos visíveis;
+- não há regressão do relógio;
+- compromissos e atividades são coerentes;
+- todas as rotas principais são alcançáveis;
+- save e recarga preservam identidade;
+- testes e E2E passam.
 
-Modularidade não significa trocar substantivos em um texto genérico.
+## 9. Regra canônica
 
-Cada profissão precisa de pesquisa, autoria e testes próprios. A vantagem da arquitetura é não repetir a infraestrutura e permitir montar novas trajetórias com blocos já estáveis.
+Nova profissão significa **novo pacote**, não novo motor.
+
+Uma alteração no motor só é aceita quando cria uma capacidade universal que mais de um pacote pode usar e vem acompanhada de testes de regressão.

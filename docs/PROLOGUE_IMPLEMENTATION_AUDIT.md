@@ -1,54 +1,100 @@
 # Auditoria de implementação do Prólogo Canônico
 
+**Data:** 24/07/2026  
+**PR:** #7  
+**Estado:** implementação aprovada em CI, E2E e preview da Vercel; aguardando integração à `main`.
+
 ## Escopo implementado
 
 - colega principal gerado deterministicamente;
-- banco temporário com nove nomes;
+- banco temporário com nove nomes autorizados;
 - quatro passados possíveis;
-- registro de identidade e reserva de nome;
+- identidade persistente e reserva de nome;
 - pessoa conhecida com contexto consultável;
 - Confiança, Proximidade e Tensão;
 - promoção para pessoa importante;
-- despertar, café, ônibus e aplicativo;
+- preferência romântica opcional;
+- despertar, alimentação e transporte;
+- ônibus e carro por aplicativo;
 - espera antes da aula;
 - trabalho em grupo;
 - merenda e lanchonete;
 - Educação Física;
-- aula vaga e possibilidade de sair da escola;
-- conflito do grupo;
-- trabalho em casa, biblioteca ou chamada;
+- aula vaga;
 - prova em dupla;
-- shopping versus responsabilidade familiar;
+- encontro do grupo em casa, biblioteca ou chamada;
+- convite social e responsabilidade familiar;
 - fofoca e confronto;
 - chegada antecipada ou atrasada;
-- apresentação às 08:00;
-- passagem modular pelo ano;
-- trabalho temporário, família ou festa;
-- quatro escolhas de formação;
-- migração do save anterior;
-- documentação de pacote narrativo.
+- apresentação somente a partir das 08:00;
+- módulos do restante do ano;
+- quatro caminhos de formação;
+- migração de progresso anterior;
+- documentação canônica.
 
-## Evidências automatizadas esperadas
+## Adequação do domínio
 
-A CI deve validar:
+- Disciplina substituída por Autocontrole;
+- atributos separados de condições;
+- conhecimentos separados e definidos por pacote;
+- reputação separada dos atributos;
+- pessoa de cena, conhecida e importante implementadas;
+- memórias persistentes implementadas;
+- interface prioriza descrições humanas;
+- números relacionais permanecem em detalhes.
 
+## Modularidade comprovada
+
+O motor não possui nomes, cenas, matérias ou locais escolares.
+
+O teste automatizado cria e executa um pacote de jogador de futebol com:
+
+- `training_ground`;
+- `locker_room`;
+- `ball_control`;
+- `tactics`;
+- reputação no clube;
+- treino de duas horas;
+- consumo de Energia;
+- evolução de Controle de bola.
+
+Esse pacote usa o mesmo motor, efeitos, relógio e estado do prólogo.
+
+## Evidências automatizadas
+
+A execução definitiva do PR deve registrar:
+
+- instalação congelada;
 - lint;
 - TypeScript;
 - testes unitários;
-- integridade narrativa;
+- teste profissional executável;
 - build;
-- auditorias estruturais;
-- jornada E2E;
-- restauração após recarregar.
+- auditoria da fundação;
+- auditoria de compatibilidade;
+- auditoria do prólogo;
+- auditoria econômica de Actions;
+- Playwright E2E;
+- Vercel verde.
 
 ## Limitações atuais
 
-- o banco geral de 100 nomes por gênero ainda não foi implementado; o prólogo usa os nove nomes autorizados;
-- o resolvedor completo de reencontros futuros ainda será implementado em etapa posterior;
-- preferência romântica ainda não aparece no formulário, portanto o prólogo não força romance;
-- alguns nomes técnicos internos antigos permanecem nos campos de código para compatibilidade de save, embora a interface já use linguagem canônica;
-- os módulos do restante do ano são um primeiro recorte jogável, não todos os eventos listados no documento canônico.
+- o banco geral de 100 nomes por gênero ainda não foi implementado;
+- o prólogo usa os nove nomes aprovados;
+- o resolvedor completo de reencontros ainda é uma etapa futura;
+- os eventos do restante do ano são um recorte jogável, não todos os módulos futuros;
+- catálogo de profissões e acesso gratuito/pago ainda não existem;
+- seleção de pacote na interface será implementada junto do catálogo.
 
-## Critério de merge
+Essas limitações não exigem reescrever o motor.
 
-O PR não deve ser mesclado até a CI e o E2E passarem integralmente.
+## Critério de conclusão
+
+A consolidação só pode ser integrada quando:
+
+1. CI integralmente verde;
+2. E2E verde;
+3. preview da Vercel verde;
+4. PR mesclável;
+5. documentação canônica atualizada;
+6. CI e Vercel da `main` confirmadas depois do merge.

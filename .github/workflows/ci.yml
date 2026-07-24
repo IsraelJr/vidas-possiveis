@@ -83,17 +83,23 @@ jobs:
           set -o pipefail
           pnpm build 2>&1 | tee ci-diagnostics/build.log
 
-      - name: Sprint 0 audit
+      - name: Foundation audit
         shell: bash
         run: |
           set -o pipefail
           pnpm audit:sprint0 2>&1 | tee ci-diagnostics/sprint-0-audit.log
 
-      - name: Sprint 1 audit
+      - name: Sprint 1 compatibility audit
         shell: bash
         run: |
           set -o pipefail
           pnpm audit:sprint1 2>&1 | tee ci-diagnostics/sprint-1-audit.log
+
+      - name: Canonical prologue audit
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm audit:prologue 2>&1 | tee ci-diagnostics/prologue-audit.log
 
       - name: GitHub Actions usage audit
         shell: bash

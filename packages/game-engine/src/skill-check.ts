@@ -1,20 +1,5 @@
+import { deterministicUnit } from "./random";
 import type { OutcomeTier, SkillCheckInput, SkillCheckResult } from "./types";
-
-function hash(input: string): number {
-  let value = 2166136261;
-  for (let index = 0; index < input.length; index += 1) {
-    value ^= input.charCodeAt(index);
-    value = Math.imul(value, 16777619);
-  }
-  return value >>> 0;
-}
-
-function nextRandom(seed: number): number {
-  let value = seed + 0x6d2b79f5;
-  value = Math.imul(value ^ (value >>> 15), value | 1);
-  value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
-  return ((value ^ (value >>> 14)) >>> 0) / 4_294_967_296;
-}
 
 export function resolveOutcome(score: number): OutcomeTier {
   if (score <= 10) return "critical_failure";
@@ -29,10 +14,16 @@ export function runSkillCheck(input: SkillCheckInput): SkillCheckResult {
     throw new Error("rollIndex deve ser um inteiro não negativo.");
   }
 
-  const random = nextRandom(hash(`${input.seed}:${input.eventId}:${input.rollIndex}`));
-  const roll = Math.floor(random * 100) + 1;
+  const roll = Math.floor(
+    deterministicUnit(input.seed, `${input.eventId}:${input.rollIndex}`) * 100
+  ) + 1;
   const modifierTotal = input.modifiers.reduce((sum, modifier) => sum + modifier.value, 0);
   const score = Math.max(1, Math.min(100, roll + modifierTotal - input.difficulty + 50));
 
-  return { roll, modifierTotal, score, outcome: resolveOutcome(score) };
+  return {
+    roll,
+    modifierTotal,
+    score,
+    outcome: resolveOutcome(score)
+  };
 }

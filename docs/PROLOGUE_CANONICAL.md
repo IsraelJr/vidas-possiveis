@@ -2,25 +2,49 @@
 
 **Versão:** 1.0  
 **Data:** 24/07/2026  
-**Recorte:** adolescente de classe média, 17 anos, terceiro ano do Ensino Médio  
-**Status:** fonte obrigatória para implementação e testes
+**Recorte:** personagem de classe média, 17 anos, terceiro ano do Ensino Médio.
 
-## Regra de consulta
+Este documento define o prólogo escolar que deve ser implementado e testado. O arquivo completo arquivado nas Fontes do projeto permanece válido; este documento é a especificação operacional no repositório.
 
-Antes de alterar o prólogo, pessoas, relações, horários ou eventos escolares, consultar este arquivo e `docs/HANDOFF_REFERENCE.md`.
+## 1. Função
 
-As regras gerais de domínio ficam no Handoff. A sequência, os contextos e os critérios do prólogo ficam neste documento. A decisão mais recente registrada explicitamente prevalece.
+O prólogo apresenta tempo, dinheiro, atributos, condições, relações, memórias e consequências pela vida cotidiana de um adolescente.
 
-## Banco de nomes do prólogo
+Ele deve mostrar que:
 
-Femininos:
+- não cabe tudo no mesmo dia;
+- diversão, estudo, família e trabalho competem por tempo;
+- dinheiro oferece opções, mas é limitado;
+- pessoas guardam lembranças;
+- escolhas pequenas podem voltar depois;
+- não existe resposta universalmente correta.
+
+## 2. Contexto inicial
+
+- data inicial: segunda-feira, 16/02/2026;
+- horário inicial: 06:10;
+- idade: 17 anos;
+- turno escolar: manhã;
+- família: classe média urbana brasileira;
+- celular, internet e computador familiar disponíveis;
+- merenda escolar gratuita;
+- lanchonete paga;
+- ônibus e motorista de aplicativo disponíveis;
+- dinheiro inicial limitado;
+- responsabilidades domésticas e familiares possíveis.
+
+Classe média não significa riqueza nem ausência de problemas.
+
+## 3. Banco de nomes
+
+### Femininos
 
 - Tamires;
 - Solange;
 - Paula;
 - Julia.
 
-Masculinos:
+### Masculinos
 
 - Miguel;
 - Israel;
@@ -28,174 +52,290 @@ Masculinos:
 - Rodrigo;
 - Carlos.
 
-O colega principal é gerado deterministicamente por vida. O gênero é sorteado entre mulher e homem; depois, um nome disponível é escolhido no banco correspondente. O nome fica reservado por toda a vida e a mesma pessoa sempre retorna com o mesmo `personId`, gênero, passado e memórias.
+O colega principal tem gênero 50/50, deterministicamente. O gênero do jogador não interfere. O nome do jogador é excluído do sorteio. Nomes ficam reservados por toda a vida.
 
-## Colega principal
+## 4. Elenco por papéis
 
-O papel é **colega do grupo que não conseguiu cumprir sua parte**. Não existe nome obrigatório.
+### Colega principal do grupo
 
-O passado é escolhido entre quatro modelos:
+Pessoa conhecida que não terminou sua parte do trabalho. Pode ter qualquer gênero e qualquer nome do banco.
 
-1. já ajudou o jogador em outra matéria;
-2. já provocou o jogador, mas também agiu corretamente em outra situação;
-3. normalmente é responsável, porém enfrenta um problema excepcional;
-4. costuma deixar tarefas para os outros.
+### Amigo ou amiga de convivência
 
-O jogador deve poder abrir **“Quem é esta pessoa?”** antes de tomar uma decisão relevante. O contexto exibido deve justificar Confiança, Proximidade e Tensão.
+Pessoa que conversa no intervalo, convida para passeios e pode virar importante ou desaparecer.
 
-A pessoa começa como conhecida. Pode virar importante, rival, distante ou inativa conforme novas interações. Não existe vingança automática nem recompensa automática.
+### Colega de atrito
 
-## Estrutura obrigatória
+Pessoa competitiva que pode provocar, espalhar versão exagerada, reconciliar ou virar rival.
 
-O prólogo começa em 16/02/2026 às 06:10 e termina no fim do ano letivo.
+### Possível romance
 
-O primeiro arco deve conter:
+Não é criado obrigatoriamente. Pode surgir com pessoa existente quando houver compatibilidade, reciprocidade, confiança, proximidade e pouca tensão.
 
-1. despertar e preparação;
-2. café, ônibus ou carro por aplicativo;
-3. espera antes da aula;
-4. anúncio do trabalho;
-5. colega variável e contexto consultável;
-6. merenda ou lanchonete;
-7. Educação Física;
-8. aula vaga ou professor substituto;
-9. possibilidade de faltar para sair com amigos;
-10. mensagem do grupo às 16:00;
-11. investigação antes da decisão;
-12. ajudar, organizar, excluir ou expor;
-13. trabalho em casa, biblioteca ou chamada;
-14. prova em dupla;
-15. convite social em conflito com responsabilidade familiar;
-16. intriga ou fofoca com origem rastreável;
-17. chegada antecipada ou atrasada para a apresentação;
-18. apresentação às 08:00;
-19. consequência relacional;
-20. passagem modular pelo restante do ano;
-21. escolha inicial de formação.
+### Professores e família
 
-## Contextos de vida adolescente
+Podem usar papéis ou sobrenomes próprios e não consomem o pequeno banco de adolescentes.
 
-Os módulos podem utilizar:
+## 5. Quatro passados do colega
 
-- amizades;
-- rivalidades;
-- namoro opcional;
-- brigas e reconciliações;
-- faltas para ficar com amigos;
-- trabalhos em casa;
-- provas individuais ou em dupla;
-- professores substitutos;
-- aulas vagas;
-- shopping, parque, cinema, festa ou balada adequada à idade;
-- trabalho temporário;
-- castigo;
-- responsabilidade com irmãos;
-- cuidado de parente doente;
-- responsáveis viajando;
-- festa de família recusada;
-- jogos entre turmas;
-- transporte público e aplicativo;
-- merenda e lanchonete.
+### A — Já ajudou o jogador
 
-Nem todos os eventos devem aparecer na mesma vida. Cada vida recebe ao menos um módulo acadêmico, social, familiar/financeiro, físico/conflito e relacional.
+A pessoa explicou Física ou ajudou em outra dificuldade. Relação aproximada: Confiança 32, Proximidade 22, Tensão 3.
 
-## Classe média
+### B — Já provocou o jogador
 
-O personagem possui celular, internet, acesso a computador familiar, dinheiro limitado, merenda disponível, possibilidade de comprar lanche, ônibus e uso ocasional de aplicativo.
+A pessoa fez uma brincadeira constrangedora, mas também interrompeu outra humilhação. Relação aproximada: 20, 18, 14.
 
-Classe média não significa dinheiro ilimitado. Gastos com transporte, lanchonete, shopping e festas competem entre si.
+### C — Normalmente responsável
 
-## Pessoas e romance
+Já trabalhou bem com o jogador e a falha atual parece exceção. Relação aproximada: 35, 17, 4.
 
-Papéis neutros podem ser ocupados por homens ou mulheres, independentemente do gênero do jogador.
+### D — Costuma abandonar tarefas
 
-Romance é opcional e depende de preferência afetiva, reciprocidade, idade, contexto e escolhas. Proximidade não significa romance; tensão não significa atração.
+Começa animada e desaparece quando a parte difícil chega. Relação aproximada: 18, 20, 18.
 
-## Tempo
+O nome não define o passado. A mesma Paula ou Miguel pode ter histórias diferentes em vidas distintas.
 
-Data e horário são calculados pelo motor.
+## 6. Situação atual
 
-- deslocamentos não são instantâneos;
-- ações não podem ocorrer em locais incompatíveis;
-- chegar cedo cria espera ou preparação;
-- chegar tarde cria atraso;
-- a apresentação não pode começar antes de 08:00;
-- o relógio nunca pode retroceder;
-- refeições, sono, passeios e retornos consomem tempo;
-- o texto da atividade deve corresponder ao horário.
+O motivo da falha é sorteado de forma compatível:
 
-Casos mínimos de teste:
+- parente doente;
+- falta de computador;
+- ansiedade;
+- trabalho inesperado;
+- procrastinação;
+- festa;
+- dificuldade na matéria;
+- problema familiar;
+- doença.
 
-- 05:40 → 08:00 = 140 minutos;
-- segunda 18:10 → terça 05:40 = 690 minutos;
-- 06:35 → 10:30 = 235 minutos;
-- 08:20 para compromisso às 08:00 = atraso de 20 minutos.
+Passado e situação não podem se contradizer sem explicação.
 
-## Arquitetura narrativa
+## 7. Primeira semana obrigatória
 
-O prólogo é um **pacote narrativo** composto por módulos. O motor não conhece nomes, cenas escolares ou profissões.
+### 7.1. O despertador
 
-O pacote declara:
+Às 06:10, o jogador escolhe entre:
 
-- identificador e versão;
-- nó inicial;
-- módulos;
-- cenas;
-- compromissos;
-- escolhas;
-- efeitos;
-- pessoas por papel;
-- condições;
-- resultados;
-- finais.
+- café e ônibus;
+- café rápido e ônibus anterior;
+- dormir mais e usar aplicativo;
+- sair sem comer.
 
-Os módulos atuais são:
+Cada opção altera tempo, dinheiro e Energia.
 
-- rotina escolar;
-- projeto em grupo;
-- alimentação e dinheiro;
-- atividade física;
-- vida social escolar;
+### 7.2. Chegada antecipada
+
+Quem chega antes de 07:30 deve ver “Aguardar o início da aula”, nunca “Assistir à aula”. Pode revisar, conversar ou esperar.
+
+### 7.3. Trabalho do bimestre
+
+Às 07:30, a professora de Português anuncia trabalho com apresentação na sexta-feira às 08:00. O colega principal entra no grupo.
+
+A tela precisa oferecer “Quem é {nome}?”.
+
+### 7.4. Intervalo
+
+Às 10:00, o jogador pode:
+
+- comer a merenda;
+- comprar na lanchonete;
+- dividir lanche;
+- não comer.
+
+A decisão altera dinheiro, Energia e convivência.
+
+### 7.5. Educação Física
+
+Às 10:20, atividade sorteada entre futsal, vôlei, corrida ou revezamento. O jogador pode se esforçar, participar de leve, ajudar alguém ou ficar de fora.
+
+Vigor, Agilidade, Energia, Saúde e relações possuem funções diferentes.
+
+### 7.6. Aula vaga ou substituta
+
+Às 11:10, o professor falta. O jogador pode:
+
+- trabalhar;
+- conversar;
+- sair escondido;
+- ajudar o substituto.
+
+Sair altera localização, ocupa tempo e registra ausência.
+
+### 7.7. Mensagem do grupo
+
+Às 16:00, o colega informa que não concluiu a parte. O jogador pode perguntar o que aconteceu antes de decidir.
+
+Decisões possíveis:
+
+- ajudar;
+- criar plano e prazo;
+- dar última chance;
+- retirar do grupo;
+- expor e humilhar.
+
+Cada decisão cria memória e pode produzir consequência futura.
+
+### 7.8. Local do trabalho
+
+- casa;
+- biblioteca;
+- chamada de vídeo;
+- trabalho individual.
+
+Deslocamento e horário devem ser coerentes.
+
+### 7.9. Reunião
+
+O encontro pode permanecer focado, incluir pausa ou virar evento social. A decisão altera preparação, convivência, Energia e Estresse.
+
+### 7.10. Noite
+
+O jogador pode revisar e dormir, descansar cedo ou ficar no celular. A manhã seguinte reflete Energia, Estresse, Autocontrole e conhecimento.
+
+### 7.11. Prova em dupla
+
+O jogador e o colega podem resolver juntos, deixar uma pessoa assumir ou aceitar resposta indevida. A memória precisa acompanhar o ato.
+
+### 7.12. Convite social
+
+Um amigo convida para shopping, parque ou festa. Ao mesmo tempo, existe responsabilidade familiar. Opções incluem ônibus, aplicativo, negociação, recusa ou mentira.
+
+### 7.13. Fofoca e conflito
+
+Uma versão exagerada das ações circula. O jogador pode conversar, ignorar, responder com humor, confrontar, pedir ajuda ou, em situação extrema, brigar.
+
+A fofoca precisa nascer de algo que realmente aconteceu. A briga possui custo de Saúde, Estresse, Reputação e Tensão.
+
+### 7.14. Apresentação
+
+Sexta-feira, 20/02/2026, às 08:00.
+
+Chegada antes da hora cria espera e revisão. Chegada às 08:10 cria atraso. A atividade “Apresentar o trabalho” só pode ocorrer às 08:00 ou depois.
+
+O resultado considera:
+
+- Comunicação ou Raciocínio;
+- preparo;
+- revisão;
+- Energia;
+- Estresse;
+- atraso;
+- organização do grupo;
+- relação com o colega.
+
+A interface mostra resultado em linguagem natural, sem rolagem ou modificadores.
+
+### 7.15. Depois da nota
+
+O colega pode permanecer conhecido, virar importante ou se afastar. A mudança depende de escolhas e memórias, não só de um número.
+
+## 8. Módulos do restante do ano
+
+Toda vida recebe ao menos:
+
 - evento acadêmico;
-- conflito;
-- apresentação;
-- passagem modular do ano;
-- ponte para formação;
-- encerramento.
+- evento social;
+- evento familiar ou financeiro;
+- evento físico ou de conflito;
+- evento de relação.
 
-## Critérios de aceite
+A implementação inicial inclui:
 
-A implementação só pode ser aprovada quando:
+### Acadêmico
 
-1. usa exclusivamente os nove nomes autorizados neste recorte;
-2. gênero, nome e passado permanecem após recarregar;
-3. o nome não é reutilizado em outra pessoa;
-4. “Quem é esta pessoa?” aparece antes da decisão relevante;
-5. existem quatro históricos possíveis;
-6. merenda, lanchonete, ônibus e aplicativo são escolhas reais;
-7. Educação Física afeta estado ou relações;
-8. há aula vaga ou substituta;
-9. faltar possui duração e consequência;
-10. existe prova em dupla;
-11. existe apresentação às 08:00;
-12. intriga possui origem;
-13. há conflito entre lazer e responsabilidade;
-14. romance não é obrigatório;
-15. pessoas podem mudar de categoria;
-16. nenhuma rota retrocede o relógio;
-17. nenhuma rota fica sem escolha;
-18. todos os textos visíveis evitam termos técnicos;
-19. testes automatizados simulam múltiplas vidas;
-20. o final registra formação e pessoas persistentes.
+Professor substituto: colaborar, entrar na bagunça ou estudar outra matéria.
 
-## Código fonte
+### Social
 
-A implementação canônica está distribuída em:
+Passeio ao destino sorteado: ônibus, aplicativo, recusa ou convite ao colega principal.
 
-- `packages/game-engine/src/identity.ts`;
-- `packages/game-engine/src/game.ts`;
-- `packages/game-engine/src/types.ts`;
-- `packages/narrative/src/content.ts`;
-- `packages/narrative/src/schema.ts`;
-- `apps/web/src/components/game-shell.tsx`;
-- testes unitários, de integridade e E2E.
+### Familiar
+
+Responsabilidade: ajudar, negociar, ignorar ou transformar em trabalho pago.
+
+### Físico
+
+Jogos entre turmas: competir, apoiar, ajudar lesionado ou estudar.
+
+### Relação
+
+Fortalecer amizade, abrir possibilidade de romance, reparar conflito ou deixar a relação sumir.
+
+## 9. Fim da escola
+
+Em dezembro de 2026, o prólogo registra:
+
+- desempenho e reputação;
+- pessoas ativas e inativas;
+- pessoas importantes;
+- memórias abertas;
+- dinheiro;
+- atributos, condições e conhecimentos;
+- formação escolhida.
+
+Caminhos finais:
+
+- faculdade;
+- curso técnico;
+- trabalho e estudo online;
+- trabalho e estudo independente.
+
+Nenhuma vida fica sem caminho.
+
+## 10. Regras de romance
+
+- opcional;
+- preferência não presumida pelo gênero;
+- compatibilidade não basta;
+- exige reciprocidade;
+- tensão não significa atração;
+- proximidade não significa romance;
+- recusa não gera punição;
+- amizade é resultado completo.
+
+## 11. Tempo
+
+Casos centrais:
+
+- 06:10 → 07:30 = 80 minutos;
+- 07:30 → 10:00 = 150 minutos;
+- 10:00 → 10:20 = 20 minutos;
+- 10:20 → 11:10 = 50 minutos;
+- 11:10 → 12:00 = 50 minutos.
+
+Todas as rotas devem ser simuladas contra:
+
+- regressão de relógio;
+- atividade antecipada;
+- compromisso no passado;
+- deslocamento instantâneo;
+- locais incompatíveis;
+- nome duplicado;
+- beco sem saída.
+
+## 12. Critérios de aceite
+
+O prólogo só está concluído quando:
+
+1. usa os nove nomes autorizados;
+2. geração permanece após reload;
+3. nomes não se repetem;
+4. contexto aparece antes da decisão;
+5. quatro passados existem;
+6. merenda e lanchonete existem;
+7. ônibus e aplicativo existem;
+8. Educação Física afeta estado;
+9. aula vaga ou substituta gera escolha;
+10. faltar possui consequência;
+11. amigos em casa ou trabalho conjunto possuem horário;
+12. prova em dupla existe;
+13. apresentação ocorre no horário;
+14. intriga possui origem;
+15. briga pode ser evitada;
+16. lazer compete com responsabilidade;
+17. romance é opcional;
+18. pessoas mudam de categoria;
+19. quatro finais são alcançáveis;
+20. testes automatizados simulam as rotas principais.

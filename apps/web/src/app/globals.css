@@ -31,7 +31,7 @@ main {
 }
 
 .shell {
-  width: min(960px, 100%);
+  width: min(980px, 100%);
   margin: 0 auto;
   display: grid;
   gap: 16px;
@@ -61,17 +61,25 @@ main {
   padding: 20px;
 }
 
-.alert {
+.alert, .notice {
   margin: 0;
   padding: 12px 14px;
-  color: var(--danger);
   background: var(--surface);
-  border: 1px solid var(--danger);
   border-radius: 12px;
+}
+
+.alert {
+  color: var(--danger);
+  border: 1px solid var(--danger);
+}
+
+.notice {
+  border: 1px solid var(--consequence);
 }
 
 .hero h1, .panel h2 { margin-top: 0; }
 .muted { color: var(--muted); }
+
 .save-status {
   margin: 0 0 16px;
   color: var(--muted);
@@ -90,7 +98,7 @@ main {
 
 .form-actions { margin-top: 18px; }
 .field { display: grid; gap: 6px; }
-.field input, .field select {
+.field input, .field select, .static-field strong {
   width: 100%;
   color: var(--text);
   background: var(--surface-strong);
@@ -132,27 +140,85 @@ main {
 
 .stat:last-child { border-bottom: 0; }
 
+.person-context {
+  margin: 16px 0;
+  padding: 12px 14px;
+  background: var(--surface-strong);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.person-context summary,
+.relationship details summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
 .relationship {
   padding: 16px;
   background: var(--surface-strong);
   border: 1px solid var(--border);
   border-radius: 12px;
 }
-.relationship h3 { margin: 0; }
-.relationship p { margin: 4px 0 8px; }
 
-.change-list { margin: 0; padding-left: 20px; }
-.change-list li + li { margin-top: 6px; }
-.debug { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85rem; }
+.relationship h3 { margin: 0; }
+.relationship p { margin: 8px 0; }
+
+.relationship-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.category {
+  display: inline-flex;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.category-important {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.memory-list, .change-list {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.memory-list li + li,
+.change-list li + li {
+  margin-top: 6px;
+}
+
+.debug {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85rem;
+}
+
 .debug summary { cursor: pointer; }
-.debug pre { max-width: 100%; overflow-x: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
+.debug pre {
+  max-width: 100%;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
 
 @media (max-width: 720px) {
   main { padding: 12px; }
-  .clock { grid-template-columns: repeat(2, minmax(0, 1fr)); border-radius: 0 0 14px 14px; }
+  .clock {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    border-radius: 0 0 14px 14px;
+  }
   .form-grid, .stats-grid, .relationship-grid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 420px) {
   .clock { grid-template-columns: 1fr; }
+  .relationship-heading { align-items: flex-start; flex-direction: column; }
 }

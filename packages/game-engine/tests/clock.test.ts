@@ -9,18 +9,20 @@ describe("clock", () => {
     });
   });
 
-  it("calcula o tempo restante entre dias diferentes", () => {
-    expect(minutesBetweenClocks(
-      { date: "2026-02-16", minuteOfDay: 16 * 60 },
-      { date: "2026-02-17", minuteOfDay: 8 * 60 }
-    )).toBe(16 * 60);
+  it.each([
+    [{ date: "2026-02-17", minuteOfDay: 5 * 60 + 40 }, { date: "2026-02-17", minuteOfDay: 8 * 60 }, 140],
+    [{ date: "2026-02-16", minuteOfDay: 18 * 60 + 10 }, { date: "2026-02-17", minuteOfDay: 5 * 60 + 40 }, 690],
+    [{ date: "2026-02-17", minuteOfDay: 6 * 60 + 35 }, { date: "2026-02-17", minuteOfDay: 10 * 60 + 30 }, 235],
+    [{ date: "2026-02-17", minuteOfDay: 8 * 60 + 20 }, { date: "2026-02-17", minuteOfDay: 8 * 60 }, -20]
+  ])("calcula diferenças canônicas sem arredondamento", (from: { date: string; minuteOfDay: number }, to: { date: string; minuteOfDay: number }, expected: number) => {
+    expect(minutesBetweenClocks(from, to)).toBe(expected);
   });
 
-  it("retorna intervalo negativo quando o compromisso já passou", () => {
-    expect(minutesBetweenClocks(
-      { date: "2026-02-17", minuteOfDay: 9 * 60 },
-      { date: "2026-02-17", minuteOfDay: 8 * 60 }
-    )).toBe(-60);
+  it("atravessa mês e ano", () => {
+    expect(advanceClock({ date: "2026-12-31", minuteOfDay: 23 * 60 + 50 }, 20)).toEqual({
+      date: "2027-01-01",
+      minuteOfDay: 10
+    });
   });
 
   it("formata horário com zero à esquerda", () => {
