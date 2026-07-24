@@ -87,7 +87,14 @@ for (const marker of [
 }
 
 const modularity = await readFile("packages/narrative/tests/modularity.test.ts", "utf8");
-for (const marker of ["profession-football", "validateNarrativePack", "missing-destination"]) {
+for (const marker of [
+  "profession-football",
+  "validateNarrativePack",
+  "training_ground",
+  "ball_control",
+  "chooseStoryOption",
+  "missing-destination"
+]) {
   if (!modularity.includes(marker)) failures.push(`Teste de modularidade não contém: ${marker}`);
 }
 
@@ -96,9 +103,20 @@ for (const marker of [
   "Classe média · 17 anos · 3º ano do Ensino Médio",
   "person-context",
   "Possível interesse romântico",
-  "Reputação na escola"
+  "pack.presentation",
+  "Object.entries(state.knowledge)"
 ]) {
   if (!shell.includes(marker)) failures.push(`Interface do prólogo não contém: ${marker}`);
+}
+
+const prologuePack = await readFile("packages/narrative/src/packs/prologue/index.ts", "utf8");
+for (const marker of [
+  "Reputação na escola",
+  "knowledgeLabels",
+  "locationLabels",
+  "initialKnowledge"
+]) {
+  if (!prologuePack.includes(marker)) failures.push(`Pacote do prólogo não contém: ${marker}`);
 }
 
 if (failures.length > 0) {
@@ -107,4 +125,4 @@ if (failures.length > 0) {
   process.exit(1);
 }
 console.log("Auditoria do Prólogo Canônico aprovada.");
-console.log("Elenco determinístico, nomes únicos, contexto, módulos, pacote profissional e tempo foram verificados.");
+console.log("Elenco, identidade, contexto, tempo e execução de pacote profissional independente foram verificados.");
