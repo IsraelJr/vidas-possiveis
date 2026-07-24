@@ -2,7 +2,7 @@
 
 **Data:** 24/07/2026  
 **PR:** #7  
-**Estado:** implementação aprovada em CI, E2E e preview da Vercel; aguardando integração à `main`.
+**Estado:** implementação concluída, integrada à `main` e publicada na Vercel.
 
 ## Escopo implementado
 
@@ -62,20 +62,26 @@ Esse pacote usa o mesmo motor, efeitos, relógio e estado do prólogo.
 
 ## Evidências automatizadas
 
-A execução definitiva do PR deve registrar:
+- SHA validado: `36523f968325918ac4a629a0ef1403324030fd03`;
+- execução definitiva: `30113406692`;
+- commit squash na `main`: `03646550a2cf75ab48ee9d56ee07a8028ae3c5fd`;
+- preview da Vercel: aprovado;
+- deploy de produção: aprovado.
 
-- instalação congelada;
-- lint;
-- TypeScript;
-- testes unitários;
-- teste profissional executável;
-- build;
-- auditoria da fundação;
-- auditoria de compatibilidade;
-- auditoria do prólogo;
-- auditoria econômica de Actions;
-- Playwright E2E;
-- Vercel verde.
+A execução definitiva aprovou:
+
+1. instalação congelada;
+2. lint;
+3. TypeScript;
+4. 37 testes unitários e de integridade;
+5. pacote profissional executável;
+6. build;
+7. auditoria da fundação;
+8. auditoria de compatibilidade;
+9. auditoria canônica do prólogo;
+10. auditoria econômica de Actions;
+11. Chromium;
+12. Playwright E2E.
 
 ## Limitações atuais
 
@@ -88,13 +94,6 @@ A execução definitiva do PR deve registrar:
 
 Essas limitações não exigem reescrever o motor.
 
-## Critério de conclusão
+## Conclusão
 
-A consolidação só pode ser integrada quando:
-
-1. CI integralmente verde;
-2. E2E verde;
-3. preview da Vercel verde;
-4. PR mesclável;
-5. documentação canônica atualizada;
-6. CI e Vercel da `main` confirmadas depois do merge.
+Todos os critérios de integração foram atendidos. O Prólogo Canônico e a arquitetura modular estão concluídos no escopo definido.
