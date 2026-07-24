@@ -11,7 +11,6 @@ export const STAT_KEYS = [
 
 export type StatKey = (typeof STAT_KEYS)[number];
 export type Stats = Readonly<Record<StatKey, number>>;
-
 export type Origin = "low_income" | "middle_income" | "high_income";
 
 export type LocationId =
@@ -20,6 +19,10 @@ export type LocationId =
   | "library"
   | "work"
   | "public_transport"
+  | "ride_hailing"
+  | "shopping_mall"
+  | "park"
+  | "party"
   | "street";
 
 export interface GameClock {
@@ -36,14 +39,39 @@ export interface PlayerProfile {
 
 export const RELATIONSHIP_DIMENSIONS = ["trust", "affection", "conflict"] as const;
 export type RelationshipDimension = (typeof RELATIONSHIP_DIMENSIONS)[number];
+export type PersonCategory = "scene" | "known" | "important";
+export type PersonPresence = "active" | "distant" | "inactive" | "unavailable" | "deceased";
+export type PersonGender = "woman" | "man";
+
+export interface RelationshipMemory {
+  readonly id: string;
+  readonly date: string;
+  readonly title: string;
+  readonly text: string;
+  readonly intensity: number;
+  readonly resolved: boolean;
+  readonly tags: readonly string[];
+}
 
 export interface RelationshipState {
   readonly id: string;
   readonly name: string;
-  readonly role: "friend" | "family" | "teacher" | "partner";
+  readonly gender: PersonGender;
+  readonly role: string;
+  readonly category: PersonCategory;
+  readonly presence: PersonPresence;
+  readonly contextSummary: string;
   readonly trust: number;
   readonly affection: number;
   readonly conflict: number;
+  readonly memories: readonly RelationshipMemory[];
+}
+
+export interface IdentityRegistryEntry {
+  readonly personId: string;
+  readonly displayName: string;
+  readonly gender: PersonGender;
+  readonly reservedAt: GameClock;
 }
 
 export type OutcomeTier =
@@ -53,11 +81,7 @@ export type OutcomeTier =
   | "success"
   | "exceptional_success";
 
-export interface SkillModifier {
-  readonly label: string;
-  readonly value: number;
-}
-
+export interface SkillModifier { readonly label: string; readonly value: number; }
 export interface SkillCheckInput {
   readonly seed: string;
   readonly eventId: string;
@@ -65,7 +89,6 @@ export interface SkillCheckInput {
   readonly difficulty: number;
   readonly modifiers: readonly SkillModifier[];
 }
-
 export interface SkillCheckResult {
   readonly roll: number;
   readonly modifierTotal: number;
@@ -74,69 +97,22 @@ export interface SkillCheckResult {
 }
 
 export type ComparisonOperator = ">=" | "<=" | ">" | "<" | "==";
-
 export type Condition =
-  | {
-      readonly type: "stat";
-      readonly stat: StatKey;
-      readonly operator: ComparisonOperator;
-      readonly value: number;
-    }
-  | {
-      readonly type: "flag";
-      readonly flag: string;
-      readonly value: boolean;
-    }
-  | {
-      readonly type: "money";
-      readonly operator: ComparisonOperator;
-      readonly valueCents: number;
-    }
-  | {
-      readonly type: "location";
-      readonly value: LocationId;
-    }
-  | {
-      readonly type: "relationship";
-      readonly relationshipId: string;
-      readonly dimension: RelationshipDimension;
-      readonly operator: ComparisonOperator;
-      readonly value: number;
-    };
+  | { readonly type: "stat"; readonly stat: StatKey; readonly operator: ComparisonOperator; readonly value: number }
+  | { readonly type: "flag"; readonly flag: string; readonly value: boolean }
+  | { readonly type: "money"; readonly operator: ComparisonOperator; readonly valueCents: number }
+  | { readonly type: "location"; readonly value: LocationId }
+  | { readonly type: "relationship"; readonly relationshipId: string; readonly dimension: RelationshipDimension; readonly operator: ComparisonOperator; readonly value: number };
 
 export type ImmediateEffect =
-  | {
-      readonly type: "stat";
-      readonly stat: StatKey;
-      readonly delta: number;
-    }
-  | {
-      readonly type: "money";
-      readonly deltaCents: number;
-    }
-  | {
-      readonly type: "flag";
-      readonly flag: string;
-      readonly value: boolean;
-    }
-  | {
-      readonly type: "advance_time";
-      readonly minutes: number;
-    }
-  | {
-      readonly type: "set_clock";
-      readonly clock: GameClock;
-    }
-  | {
-      readonly type: "set_location";
-      readonly location: LocationId;
-    }
-  | {
-      readonly type: "relationship";
-      readonly relationshipId: string;
-      readonly dimension: RelationshipDimension;
-      readonly delta: number;
-    };
+  | { readonly type: "stat"; readonly stat: StatKey; readonly delta: number }
+  | { readonly type: "money"; readonly deltaCents: number }
+  | { readonly type: "flag"; readonly flag: string; readonly value: boolean }
+  | { readonly type: "advance_time"; readonly minutes: number }
+  | { readonly type: "set_clock"; readonly clock: GameClock }
+  | { readonly type: "set_location"; readonly location: LocationId }
+  | { readonly type: "relationship"; readonly relationshipId: string; readonly dimension: RelationshipDimension; readonly delta: number }
+  | { readonly type: "promote_person"; readonly relationshipId: string; readonly category: PersonCategory };
 
 export interface ScheduleConsequenceEffect {
   readonly type: "schedule_consequence";
@@ -146,7 +122,6 @@ export interface ScheduleConsequenceEffect {
   readonly text: string;
   readonly effects: readonly ImmediateEffect[];
 }
-
 export type Effect = ImmediateEffect | ScheduleConsequenceEffect;
 
 export interface ScheduledConsequence {
@@ -159,53 +134,16 @@ export interface ScheduledConsequence {
 }
 
 export type AppliedChange =
-  | {
-      readonly type: "stat";
-      readonly stat: StatKey;
-      readonly before: number;
-      readonly after: number;
-    }
-  | {
-      readonly type: "money";
-      readonly beforeCents: number;
-      readonly afterCents: number;
-    }
-  | {
-      readonly type: "flag";
-      readonly flag: string;
-      readonly before: boolean;
-      readonly after: boolean;
-    }
-  | {
-      readonly type: "clock";
-      readonly before: GameClock;
-      readonly after: GameClock;
-    }
-  | {
-      readonly type: "location";
-      readonly before: LocationId;
-      readonly after: LocationId;
-    }
-  | {
-      readonly type: "relationship";
-      readonly relationshipId: string;
-      readonly dimension: RelationshipDimension;
-      readonly before: number;
-      readonly after: number;
-    }
-  | {
-      readonly type: "scheduled_consequence";
-      readonly consequenceId: string;
-      readonly triggerAt: GameClock;
-    };
+  | { readonly type: "stat"; readonly stat: StatKey; readonly before: number; readonly after: number }
+  | { readonly type: "money"; readonly beforeCents: number; readonly afterCents: number }
+  | { readonly type: "flag"; readonly flag: string; readonly before: boolean; readonly after: boolean }
+  | { readonly type: "clock"; readonly before: GameClock; readonly after: GameClock }
+  | { readonly type: "location"; readonly before: LocationId; readonly after: LocationId }
+  | { readonly type: "relationship"; readonly relationshipId: string; readonly dimension: RelationshipDimension; readonly before: number; readonly after: number }
+  | { readonly type: "person_category"; readonly relationshipId: string; readonly before: PersonCategory; readonly after: PersonCategory }
+  | { readonly type: "scheduled_consequence"; readonly consequenceId: string; readonly triggerAt: GameClock };
 
-export interface TriggeredConsequence {
-  readonly id: string;
-  readonly title: string;
-  readonly text: string;
-  readonly changes: readonly AppliedChange[];
-}
-
+export interface TriggeredConsequence { readonly id: string; readonly title: string; readonly text: string; readonly changes: readonly AppliedChange[]; }
 export interface DecisionHistoryEntry {
   readonly nodeId: string;
   readonly choiceId: string;
@@ -216,8 +154,9 @@ export interface DecisionHistoryEntry {
 }
 
 export interface GameState {
-  readonly schemaVersion: 2;
+  readonly schemaVersion: 3;
   readonly contentVersion: string;
+  readonly narrativePackageId: string;
   readonly player: PlayerProfile;
   readonly clock: GameClock;
   readonly location: LocationId;
@@ -226,23 +165,15 @@ export interface GameState {
   readonly moneyCents: number;
   readonly flags: Readonly<Record<string, boolean>>;
   readonly relationships: Readonly<Record<string, RelationshipState>>;
+  readonly identityRegistry: Readonly<Record<string, IdentityRegistryEntry>>;
   readonly rollIndex: number;
   readonly seed: string;
   readonly history: readonly DecisionHistoryEntry[];
   readonly scheduledConsequences: readonly ScheduledConsequence[];
 }
 
-export interface SkillCheckBonusFlag {
-  readonly flag: string;
-  readonly label: string;
-  readonly value: number;
-}
-
-export interface SkillCheckOutcome {
-  readonly nextNodeId: string;
-  readonly effects: readonly ImmediateEffect[];
-}
-
+export interface SkillCheckBonusFlag { readonly flag: string; readonly label: string; readonly value: number; }
+export interface SkillCheckOutcome { readonly nextNodeId: string; readonly effects: readonly ImmediateEffect[]; }
 export interface StorySkillCheck {
   readonly eventId: string;
   readonly stat: StatKey;
@@ -250,7 +181,6 @@ export interface StorySkillCheck {
   readonly bonusFlags: readonly SkillCheckBonusFlag[];
   readonly outcomes: Readonly<Record<OutcomeTier, SkillCheckOutcome>>;
 }
-
 export interface StoryChoice {
   readonly id: string;
   readonly label: string;
@@ -259,24 +189,25 @@ export interface StoryChoice {
   readonly nextNodeId: string;
   readonly skillCheck?: StorySkillCheck;
 }
-
-export interface StoryChoiceAvailability {
-  readonly choice: StoryChoice;
-  readonly available: boolean;
-  readonly failedConditions: readonly Condition[];
-}
-
-export interface StoryCommitment {
-  readonly label: string;
-  readonly clock: GameClock;
-}
-
+export interface StoryChoiceAvailability { readonly choice: StoryChoice; readonly available: boolean; readonly failedConditions: readonly Condition[]; }
+export interface StoryCommitment { readonly label: string; readonly clock: GameClock; }
 export interface StoryNode {
   readonly id: string;
+  readonly moduleId: string;
   readonly title: string;
   readonly text: string;
   readonly activity: string;
+  readonly contextPersonId?: string;
   readonly nextCommitment?: StoryCommitment;
   readonly choices: readonly StoryChoice[];
   readonly ending?: boolean;
+}
+
+export interface NarrativePackage {
+  readonly id: string;
+  readonly version: string;
+  readonly title: string;
+  readonly startNodeId: string;
+  readonly nodeIds: readonly string[];
+  readonly moduleIds: readonly string[];
 }
