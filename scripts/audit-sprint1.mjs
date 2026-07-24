@@ -9,7 +9,8 @@ const requiredFiles = [
   "packages/narrative/tests/integrity.test.ts",
   "apps/web/src/components/game-shell.tsx",
   "apps/web/tests/e2e/game.spec.ts",
-  "docs/HANDOFF_REFERENCE.md"
+  "docs/HANDOFF_REFERENCE.md",
+  "docs/PROLOGUE_CANONICAL.md"
 ];
 const failures = [];
 for (const file of requiredFiles) try { await access(file, constants.R_OK); } catch { failures.push(`Arquivo obrigatório ausente: ${file}`); }
@@ -21,7 +22,7 @@ const types = await readFile("packages/game-engine/src/types.ts", "utf8");
 for (const marker of ["schemaVersion: 3", "IdentityRegistryEntry", "PersonCategory", "NarrativePackage", "moduleId", "contextPersonId"]) if (!types.includes(marker)) failures.push(`Contrato não contém: ${marker}`);
 
 const narrative = await readFile("packages/narrative/src/content.ts", "utf8");
-for (const marker of ["school-routine", "group-project", "food-and-money", "physical-school", "academic-event", "social-life", "conflict", "presentation", "modular-year", "formation-bridge", "Quem", "prologue.wait-presentation"]) if (!narrative.includes(marker)) failures.push(`Narrativa modular não contém: ${marker}`);
+for (const marker of ["school-routine", "group-project", "food-and-money", "physical-school", "academic-event", "social-life", "conflict", "presentation", "modular-year", "formation-bridge", "contextPersonId", "prologue.wait-presentation"]) if (!narrative.includes(marker)) failures.push(`Narrativa modular não contém: ${marker}`);
 
 const shell = await readFile("apps/web/src/components/game-shell.tsx", "utf8");
 for (const marker of ["Quem é", "Pessoas na sua vida", "Pessoa conhecida", "Pessoa importante", "Autocontrole", "Informações adicionais"]) if (!shell.includes(marker)) failures.push(`Interface não contém: ${marker}`);
