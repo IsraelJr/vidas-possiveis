@@ -1,48 +1,84 @@
 import { expect, test } from "@playwright/test";
 
-test("conclui o prólogo escolar, sente uma consequência e mantém o progresso", async ({ page }) => {
+test("joga o prólogo canônico, conhece o colega, respeita o relógio e mantém o progresso", async ({ page }) => {
   await page.goto("/");
   await page.getByLabel("Nome").fill("Marina");
-  await page.getByLabel("Origem familiar").selectOption("low_income");
+  await page.getByLabel("Personagem").selectOption("woman");
+  await page.getByLabel("Possível interesse romântico").selectOption("women");
   await page.getByRole("button", { name: "Iniciar vida" }).click();
 
-  await expect(page.getByTestId("game-clock")).toBeVisible();
-  await expect(page.getByTestId("current-time")).toHaveText("16:00");
-  await expect(page.getByTestId("time-until-commitment")).toHaveText("16h");
+  await expect(page.getByTestId("current-time")).toHaveText("06:10");
+  await expect(page.getByTestId("current-activity")).toHaveText("Preparar-se para a escola");
   await expect(page.getByTestId("save-status")).toContainText("Escolhas guardadas");
 
-  await page.getByText("Detalhes de teste").click();
-  await expect(page.getByTestId("blocked-choice-reasons")).toContainText("Possui computador deve ser sim");
+  await page.getByRole("button", { name: "Tomar café com calma e pegar o ônibus" }).click();
+  await expect(page.getByTestId("current-time")).toHaveText("07:15");
+  await expect(page.getByTestId("current-activity")).toHaveText("Aguardar o início da aula");
 
-  await page.getByRole("button", { name: "Ir à biblioteca pública antes que ela feche" }).click();
-  await expect(page.getByTestId("current-time")).toHaveText("17:30");
-  await expect(page.getByText("Horário: 16:00 → 17:30")).toBeVisible();
+  await page.getByRole("button", { name: /Conversar com / }).click();
+  await expect(page.getByRole("heading", { name: "O trabalho que vale o bimestre" })).toBeVisible();
 
-  await page.getByRole("button", { name: "Abrir a conversa do grupo" }).click();
-  await page.getByRole("button", { name: "Ajudar Bia e assumir parte do que falta" }).click();
-  await expect(page.getByText("Confiança com Bia: 50 → 58")).toBeVisible();
+  const firstContext = page.locator('[data-testid^="person-context-"]').first();
+  await expect(firstContext).toBeVisible();
+  await firstContext.locator("summary").click();
+  await expect(firstContext).toContainText(/Confiança|confia/);
 
-  await page.getByRole("button", { name: "Dormir mais cedo e confiar no que já foi feito" }).click();
-  await expect(page.getByTestId("triggered-consequence")).toContainText("A promessa da noite anterior");
+  await page.getByRole("button", { name: /Perguntar qual parte .* prefere fazer/ }).click();
+  await page.getByRole("button", { name: "Comer a merenda da escola" }).click();
+  await page.getByRole("button", { name: "Participar com dedicação" }).click();
+  await page.getByRole("button", { name: "Ficar na sala e avançar o trabalho" }).click();
+  await page.getByRole("button", { name: "Abrir as mensagens do grupo às 16:00" }).click();
 
-  await page.getByRole("button", { name: "Sair imediatamente para não correr risco de atraso" }).click();
+  await expect(page.getByRole("heading", { name: /Uma mensagem de/ })).toBeVisible();
+  const groupContext = page.locator('[data-testid="person-context-prologue-group-mate"]');
+  await expect(groupContext).toBeVisible();
+  await groupContext.locator("summary").click();
+  await expect(groupContext).toContainText(/estuda com você|turma/);
+
+  await page.getByRole("button", { name: "Perguntar o que aconteceu antes de decidir" }).click();
+  await page.getByRole("button", { name: /Manter .* no grupo com um plano e um prazo claros/ }).click();
+  await page.getByRole("button", { name: "Levar o grupo para sua casa" }).click();
+  await page.getByRole("button", { name: "Manter o encontro focado até terminar" }).click();
+  await page.getByRole("button", { name: "Revisar por uma hora e dormir" }).click();
+
+  await expect(page.getByRole("heading", { name: "A prova em dupla" })).toBeVisible();
+  await page.getByRole("button", { name: "Combinar como vocês vão dividir as questões" }).click();
+  await page.getByRole("button", { name: "Resolver as questões em conjunto" }).click();
+  await page.getByRole("button", { name: /Recusar e explicar que precisa/ }).click();
+  await page.getByRole("button", { name: /Conversar com .* em particular/ }).click();
+  await page.getByRole("button", { name: "Levantar e decidir como chegar à escola" }).click();
+
+  await expect(page.getByTestId("current-time")).toHaveText("06:30");
+  await page.getByRole("button", { name: "Tomar café e pegar o ônibus" }).click();
+  await expect(page.getByTestId("current-time")).toHaveText("07:40");
+  await expect(page.getByTestId("current-activity")).toHaveText("Aguardar e preparar a apresentação");
+  await expect(page.getByTestId("current-activity")).not.toHaveText("Apresentar o trabalho");
+
+  await page.getByRole("button", { name: "Revisar os slides com o grupo" }).click();
+  await expect(page.getByTestId("current-time")).toHaveText("08:00");
   await page.getByRole("button", { name: "Abrir a apresentação e conduzir o grupo" }).click();
   await expect(page.getByTestId("skill-result")).toBeVisible();
-  await expect(page.locator("h1")).toHaveText(/Uma apresentação difícil|Você conseguiu atravessar|A sala presta atenção/);
+  await expect(page.locator("h1")).toHaveText(/Uma apresentação difícil|Vocês conseguiram atravessar|A sala presta atenção/);
 
-  await page.getByRole("button", { name: /conversa sobre o futuro/ }).click();
-  await page.getByRole("button", { name: "Participar do curso gratuito de tecnologia" }).click();
-  await expect(page.getByRole("heading", { name: "O último dia de aula" })).toBeVisible();
-  await expect(page.getByTestId("current-time")).toHaveText("14:00");
+  await page.getByRole("button", { name: "Conversar com o grupo depois da aula" }).click();
+  await page.getByRole("button", { name: "Dizer que gostaria de manter contato e fazer outras coisas juntos" }).click();
+  await expect(page.getByText("Pessoa importante", { exact: true })).toBeVisible();
 
+  await page.getByRole("button", { name: "Colaborar e ajudar a organizar a atividade" }).click();
+  await page.getByRole("button", { name: "Recusar para preservar dinheiro e tempo" }).click();
+  await page.getByRole("button", { name: "Assumir a responsabilidade" }).click();
+  await page.getByRole("button", { name: "Ajudar a organizar e apoiar a equipe" }).click();
+  await page.getByRole("button", { name: "Investir em uma amizade e combinar de manter contato" }).click();
+  await page.getByRole("button", { name: "Guardar as lembranças e pensar no próximo passo" }).click();
   await page.getByRole("button", { name: "Entrar em um curso técnico" }).click();
+
   await expect(page.getByRole("heading", { name: "Aprender fazendo" })).toBeVisible();
   await expect(page.getByText("Esta etapa da sua história chegou ao fim.")).toBeVisible();
-  await expect(page.getByText("O save foi registrado e o relógio reflete o tempo consumido.")).toHaveCount(0);
+  await expect(page.getByTestId("current-time")).toHaveText("16:30");
   await expect(page.getByTestId("save-status")).toContainText("Escolhas guardadas");
 
   await page.reload();
   await expect(page.getByRole("heading", { name: "Aprender fazendo" })).toBeVisible();
-  await expect(page.getByTestId("current-time")).toHaveText("14:30");
+  await expect(page.getByTestId("current-time")).toHaveText("16:30");
   await expect(page.getByTestId("save-status")).toContainText("Escolhas guardadas");
 });

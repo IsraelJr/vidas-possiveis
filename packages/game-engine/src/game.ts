@@ -2,12 +2,16 @@ import { compareClocks } from "./clock";
 import { conditionsAreMet, evaluateCondition } from "./conditions";
 import { applyEffects } from "./effects";
 import { runSkillCheck } from "./skill-check";
-import { createInitialStats } from "./stats";
+import {
+  createInitialAttributes,
+  createInitialConditions,
+  createInitialKnowledge
+} from "./stats";
 import type {
   AppliedChange,
+  GameScenarioSetup,
   GameState,
   PlayerProfile,
-  RelationshipState,
   SkillModifier,
   StoryChoice,
   StoryChoiceAvailability,
@@ -15,51 +19,71 @@ import type {
   TriggeredConsequence
 } from "./types";
 
-function createInitialRelationships(): Readonly<Record<string, RelationshipState>> {
+export function createGameState(player: PlayerProfile, setup: GameScenarioSetup): GameState {
   return {
-    bia: {
-      id: "bia",
-      name: "Bia",
-      role: "friend",
-      trust: 50,
-      affection: 45,
-      conflict: 10
-    }
-  };
-}
-
-export function createGameState(player: PlayerProfile): GameState {
-  return {
-    schemaVersion: 2,
-    contentVersion: "sprint-1.0",
+    schemaVersion: 3,
+    contentVersion: setup.contentVersion,
     player,
-    clock: { date: "2026-02-16", minuteOfDay: 16 * 60 },
-    location: "school",
-    currentNodeId: "school.computer-assignment",
-    stats: createInitialStats(player.origin),
-    moneyCents: player.origin === "low_income" ? 3_000 : player.origin === "middle_income" ? 12_000 : 30_000,
-    flags: { hasComputer: player.origin !== "low_income" },
-    relationships: createInitialRelationships(),
+    clock: setup.clock,
+    location: setup.location,
+    currentNodeId: setup.entryNodeId,
+    attributes: createInitialAttributes(),
+    conditions: createInitialConditions(),
+    knowledge: createInitialKnowledge(),
+    reputation: 10,
+    moneyCents: setup.moneyCents,
+    flags: setup.flags,
+    people: setup.people,
+    usedNames: setup.usedNames,
+    scenario: { id: setup.id, variables: setup.variables },
     rollIndex: 0,
-    seed: `${player.id}:${player.origin}`,
+    seed: `${player.id}:${setup.id}`,
     history: [],
     scheduledConsequences: []
   };
 }
 
-export function migrateGameState(state: GameState): GameState {
-  const candidate = state as GameState & {
-    readonly schemaVersion?: number;
-    readonly relationships?: Readonly<Record<string, RelationshipState>>;
-    readonly scheduledConsequences?: GameState["scheduledConsequences"];
-  };
+export function readPersistedPlayerProfile(state: unknown): PlayerProfile | null {
+  if (!state || typeof state !== "object") return null;
+  const candidate = state as { readonly player?: Partial<PlayerProfile> };
+  const player = candidate.player;
+  if (!player || typeof player.id !== "string" || typeof player.name !== "string") return null;
 
   return {
-    ...candidate,
-    schemaVersion: 2,
-    contentVersion: "sprint-1.0",
-    relationships: candidate.relationships ?? createInitialRelationships(),
-    scheduledConsequences: candidate.scheduledConsequences ?? []
+    id: player.id,
+    name: player.name,
+    presentation: player.presentation === "woman" ? "woman" : "man",
+    origin: "middle_income",
+    romanticPreference:
+      player.romanticPreference === "women" ||
+      player.romanticPreference === "men" ||
+      player.romanticPreference === "both" ||
+      player.romanticPreference === "none"
+        ? player.romanticPreference
+        : "undefined"
+  };
+}
+
+export function migrateGameState(state: unknown, setup: GameScenarioSetup): GameState {
+  const player = readPersistedPlayerProfile(state);
+  if (!player) throw new Error("O progresso salvo não contém um personagem válido.");
+
+  const candidate = state as Partial<GameState>;
+  if (
+    candidate.schemaVersion === 3 &&
+    candidate.contentVersion === setup.contentVersion &&
+    candidate.scenario?.id === setup.id
+  ) {
+    return candidate as GameState;
+  }
+
+  const migrated = createGameState(player, setup);
+  return {
+    ...migrated,
+    flags: {
+      ...migrated.flags,
+      migratedFromEarlierPrologue: true
+    }
   };
 }
 
@@ -110,16 +134,16 @@ function buildSkillModifiers(state: GameState, choice: StoryChoice): readonly Sk
   if (!choice.skillCheck) return [];
   const modifiers: SkillModifier[] = [
     {
-      label: choice.skillCheck.stat,
-      value: Math.round((state.stats[choice.skillCheck.stat] - 50) / 5)
+      label: choice.skillCheck.attribute,
+      value: Math.round((state.attributes[choice.skillCheck.attribute] - 50) / 5)
     },
     {
       label: "energy",
-      value: Math.round((state.stats.energy - 50) / 10)
+      value: Math.round((state.conditions.energy - 50) / 10)
     },
     {
       label: "stress",
-      value: -Math.round(state.stats.stress / 20)
+      value: -Math.round(state.conditions.stress / 20)
     }
   ];
 

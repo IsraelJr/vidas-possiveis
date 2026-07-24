@@ -2,65 +2,85 @@ import { describe, expect, it } from "vitest";
 import {
   chooseStoryOption,
   createGameState,
-  getAvailableChoices,
   getChoiceAvailability,
   migrateGameState,
-  type GameState,
+  readPersistedPlayerProfile,
+  type GameScenarioSetup,
+  type PlayerProfile,
   type StoryNode,
   type StorySkillCheck
 } from "../src";
 
-const basicNode: StoryNode = {
-  id: "school.computer-assignment",
-  title: "Trabalho escolar",
-  text: "A turma precisa de um computador.",
-  activity: "Organizar o trabalho",
-  choices: [
-    {
-      id: "use-own-computer",
-      label: "Usar computador próprio",
-      conditions: [{ type: "flag", flag: "hasComputer", value: true }],
-      effects: [{ type: "advance_time", minutes: 60 }],
-      nextNodeId: "school.result"
-    },
-    {
-      id: "go-library",
-      label: "Ir à biblioteca",
-      conditions: [],
-      effects: [
-        { type: "advance_time", minutes: 90 },
-        { type: "set_location", location: "library" }
-      ],
-      nextNodeId: "school.result"
+const player: PlayerProfile = {
+  id: "p",
+  name: "Rui",
+  presentation: "man",
+  origin: "middle_income",
+  romanticPreference: "women"
+};
+
+const setup: GameScenarioSetup = {
+  id: "generic-life",
+  contentVersion: "generic-1",
+  entryNodeId: "start",
+  clock: { date: "2026-02-16", minuteOfDay: 6 * 60 },
+  location: "home",
+  moneyCents: 10_000,
+  flags: { allowed: false },
+  usedNames: { rui: "player", paula: "person-1" },
+  variables: {},
+  people: {
+    "person-1": {
+      id: "person-1",
+      name: "Paula",
+      gender: "woman",
+      role: "Colega",
+      category: "known",
+      presence: "active",
+      contextSummary: "Colega conhecida.",
+      trust: 30,
+      closeness: 20,
+      tension: 5,
+      memories: []
     }
-  ]
+  }
 };
 
 const outcomes: StorySkillCheck["outcomes"] = {
-  critical_failure: { nextNodeId: "result.critical", effects: [{ type: "stat", stat: "stress", delta: 10 }] },
-  failure: { nextNodeId: "result.failure", effects: [{ type: "stat", stat: "stress", delta: 5 }] },
-  partial_success: { nextNodeId: "result.partial", effects: [{ type: "stat", stat: "reputation", delta: 1 }] },
-  success: { nextNodeId: "result.success", effects: [{ type: "stat", stat: "reputation", delta: 3 }] },
-  exceptional_success: { nextNodeId: "result.exceptional", effects: [{ type: "stat", stat: "reputation", delta: 5 }] }
+  critical_failure: { nextNodeId: "critical", effects: [{ type: "condition", condition: "stress", delta: 10 }] },
+  failure: { nextNodeId: "failure", effects: [{ type: "condition", condition: "stress", delta: 5 }] },
+  partial_success: { nextNodeId: "partial", effects: [{ type: "reputation", delta: 1 }] },
+  success: { nextNodeId: "success", effects: [{ type: "reputation", delta: 3 }] },
+  exceptional_success: { nextNodeId: "exceptional", effects: [{ type: "reputation", delta: 5 }] }
 };
 
-const skillNode: StoryNode = {
-  id: "school.presentation",
-  title: "Apresentação",
-  text: "Chegou a hora.",
-  activity: "Apresentar o trabalho",
+const node: StoryNode = {
+  id: "start",
+  title: "Decisão",
+  text: "Escolha.",
+  activity: "Decidir",
   choices: [
     {
+      id: "blocked",
+      label: "Bloqueada",
+      conditions: [{ type: "flag", flag: "allowed", value: true }],
+      effects: [],
+      nextNodeId: "after"
+    },
+    {
       id: "present",
-      label: "Apresentar",
+      label: "Agir",
       conditions: [],
-      effects: [{ type: "advance_time", minutes: 20 }],
-      nextNodeId: "result.partial",
+      effects: [
+        { type: "advance_time", minutes: 20 },
+        { type: "relationship", personId: "person-1", dimension: "trust", delta: 4 }
+      ],
+      nextNodeId: "partial",
       skillCheck: {
-        eventId: "presentation",
-        stat: "communication",
+        eventId: "generic-action",
+        attribute: "communication",
         difficulty: 50,
-        bonusFlags: [{ flag: "preparedAssignment", label: "Preparação", value: 10 }],
+        bonusFlags: [],
         outcomes
       }
     }
@@ -68,104 +88,44 @@ const skillNode: StoryNode = {
 };
 
 describe("game", () => {
-  it("filtra escolhas pelo estado", () => {
-    const state = createGameState({ id: "p", name: "Rui", presentation: "man", origin: "low_income" });
-    expect(getAvailableChoices(state, basicNode).map((choice) => choice.id)).toEqual(["go-library"]);
+  it("explica escolhas bloqueadas", () => {
+    const state = createGameState(player, setup);
+    const blocked = getChoiceAvailability(state, node).find((item) => item.choice.id === "blocked");
+    expect(blocked?.available).toBe(false);
+    expect(blocked?.failedConditions).toEqual([{ type: "flag", flag: "allowed", value: true }]);
   });
 
-  it("informa por que uma escolha está bloqueada", () => {
-    const state = createGameState({ id: "p", name: "Rui", presentation: "man", origin: "low_income" });
-    const availability = getChoiceAvailability(state, basicNode);
-    const blocked = availability.find((item) => item.choice.id === "use-own-computer");
-
-    expect(blocked).toEqual({
-      choice: basicNode.choices[0],
-      available: false,
-      failedConditions: [{ type: "flag", flag: "hasComputer", value: true }]
-    });
-  });
-
-  it("libera a mesma escolha quando a condição é atendida", () => {
-    const state = createGameState({ id: "p", name: "Rui", presentation: "man", origin: "middle_income" });
-    const availability = getChoiceAvailability(state, basicNode);
-    const ownComputer = availability.find((item) => item.choice.id === "use-own-computer");
-
-    expect(ownComputer?.available).toBe(true);
-    expect(ownComputer?.failedConditions).toEqual([]);
-  });
-
-  it("registra a escolha e avança o nó", () => {
-    const state = createGameState({ id: "p", name: "Rui", presentation: "man", origin: "low_income" });
-    const next = chooseStoryOption(state, basicNode, "go-library");
-    expect(next.currentNodeId).toBe("school.result");
-    expect(next.location).toBe("library");
-    expect(next.history).toHaveLength(1);
-  });
-
-  it("usa um teste de habilidade para decidir o próximo nó", () => {
-    const initial = createGameState({ id: "p", name: "Rui", presentation: "man", origin: "middle_income" });
-    const state: GameState = {
-      ...initial,
-      currentNodeId: skillNode.id,
-      flags: { ...initial.flags, preparedAssignment: true }
-    };
-    const next = chooseStoryOption(state, skillNode, "present");
+  it("usa teste determinístico e mantém o personId", () => {
+    const state = createGameState(player, setup);
+    const next = chooseStoryOption(state, node, "present");
     const result = next.history.at(-1)?.skillCheck;
-
     expect(result).toBeDefined();
     expect(next.currentNodeId).toBe(outcomes[result!.outcome].nextNodeId);
-    expect(next.rollIndex).toBe(1);
+    expect(next.people["person-1"]?.name).toBe("Paula");
+    expect(next.people["person-1"]?.trust).toBe(34);
   });
 
-  it("dispara uma consequência quando o tempo definido chega", () => {
-    const state = createGameState({ id: "p", name: "Rui", presentation: "man", origin: "middle_income" });
-    const consequenceNode: StoryNode = {
-      id: state.currentNodeId,
-      title: "Promessa",
-      text: "Uma escolha terá efeito depois.",
-      activity: "Cumprir uma promessa",
-      choices: [
-        {
-          id: "promise",
-          label: "Prometer",
-          conditions: [],
-          effects: [
-            {
-              type: "schedule_consequence",
-              consequenceId: "promise-return",
-              delayMinutes: 30,
-              title: "A promessa voltou",
-              text: "Agora é preciso cumprir.",
-              effects: [{ type: "stat", stat: "stress", delta: 8 }]
-            },
-            { type: "advance_time", minutes: 60 }
-          ],
-          nextNodeId: "after"
-        }
-      ]
-    };
-
-    const next = chooseStoryOption(state, consequenceNode, "promise");
-    expect(next.scheduledConsequences).toHaveLength(0);
-    expect(next.stats.stress).toBe(state.stats.stress + 8);
-    expect(next.history.at(-1)?.triggeredConsequences?.[0]?.title).toBe("A promessa voltou");
-  });
-
-  it("migra o progresso criado na Sprint 0", () => {
-    const current = createGameState({ id: "p", name: "Rui", presentation: "man", origin: "low_income" });
+  it("migra progresso antigo para o pacote atual sem perder o personagem", () => {
     const legacy = {
-      ...current,
-      schemaVersion: 1,
-      contentVersion: "sprint-0.2",
-      relationships: undefined,
-      scheduledConsequences: undefined,
-      currentNodeId: "school.assignment-result"
-    } as unknown as GameState;
+      schemaVersion: 2,
+      contentVersion: "sprint-1.0",
+      player: { id: "old", name: "Lia", presentation: "woman", origin: "low_income" }
+    };
+    const migrated = migrateGameState(legacy, setup);
+    expect(migrated.schemaVersion).toBe(3);
+    expect(migrated.player.name).toBe("Lia");
+    expect(migrated.player.origin).toBe("middle_income");
+    expect(migrated.currentNodeId).toBe(setup.entryNodeId);
+    expect(migrated.flags.migratedFromEarlierPrologue).toBe(true);
+  });
 
-    const migrated = migrateGameState(legacy);
-    expect(migrated.schemaVersion).toBe(2);
-    expect(migrated.contentVersion).toBe("sprint-1.0");
-    expect(migrated.relationships.bia?.name).toBe("Bia");
-    expect(migrated.currentNodeId).toBe("school.assignment-result");
+  it("lê perfil antigo e não presume preferência romântica", () => {
+    expect(readPersistedPlayerProfile({ player: { id: "x", name: "Leo", presentation: "man" } })).toEqual({
+      id: "x",
+      name: "Leo",
+      presentation: "man",
+      origin: "middle_income",
+      romanticPreference: "undefined"
+    });
   });
 });

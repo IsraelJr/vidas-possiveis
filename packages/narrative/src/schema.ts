@@ -1,40 +1,78 @@
 import { z } from "zod";
 
-const statKeySchema = z.enum([
-  "knowledge",
+const attributeKeySchema = z.enum([
+  "reasoning",
+  "perception",
   "communication",
-  "discipline",
-  "ethics",
-  "energy",
-  "stress",
-  "health",
-  "reputation"
+  "selfControl",
+  "vigor",
+  "agility"
 ]);
-
-const relationshipDimensionSchema = z.enum(["trust", "affection", "conflict"]);
+const conditionKeySchema = z.enum(["energy", "stress", "health"]);
+const knowledgeKeySchema = z.enum(["mathematics", "portuguese", "physics", "technology"]);
+const relationshipDimensionSchema = z.enum(["trust", "closeness", "tension"]);
+const personCategorySchema = z.enum(["scene", "known", "important"]);
+const personPresenceSchema = z.enum(["active", "distant", "inactive", "unavailable", "deceased"]);
 const comparisonOperatorSchema = z.enum([">=", "<=", ">", "<", "=="]);
-const locationSchema = z.enum(["home", "school", "library", "work", "public_transport", "street"]);
+const locationSchema = z.enum([
+  "home",
+  "school",
+  "library",
+  "work",
+  "public_transport",
+  "street",
+  "shopping_mall",
+  "park",
+  "party"
+]);
 const clockSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   minuteOfDay: z.number().int().min(0).max(1439)
 });
 
 const conditionSchema = z.discriminatedUnion("type", [
-  z.object({ type: z.literal("stat"), stat: statKeySchema, operator: comparisonOperatorSchema, value: z.number() }),
+  z.object({ type: z.literal("attribute"), attribute: attributeKeySchema, operator: comparisonOperatorSchema, value: z.number() }),
+  z.object({ type: z.literal("condition"), condition: conditionKeySchema, operator: comparisonOperatorSchema, value: z.number() }),
+  z.object({ type: z.literal("knowledge"), knowledge: knowledgeKeySchema, operator: comparisonOperatorSchema, value: z.number() }),
+  z.object({ type: z.literal("reputation"), operator: comparisonOperatorSchema, value: z.number() }),
   z.object({ type: z.literal("flag"), flag: z.string().min(1), value: z.boolean() }),
   z.object({ type: z.literal("money"), operator: comparisonOperatorSchema, valueCents: z.number().int() }),
   z.object({ type: z.literal("location"), value: locationSchema }),
   z.object({
     type: z.literal("relationship"),
-    relationshipId: z.string().min(1),
+    personId: z.string().min(1),
     dimension: relationshipDimensionSchema,
     operator: comparisonOperatorSchema,
     value: z.number()
   })
 ]);
 
+const memorySchema = z.object({
+  id: z.string().min(1),
+  summary: z.string().min(1),
+  kind: z.enum([
+    "help",
+    "promise",
+    "conflict",
+    "humiliation",
+    "reconciliation",
+    "shared_work",
+    "shared_leisure",
+    "family",
+    "academic",
+    "romance",
+    "other"
+  ]),
+  intensity: z.number().int().min(0).max(10),
+  resolved: z.boolean(),
+  tags: z.array(z.string().min(1))
+});
+
 const immediateEffectSchema = z.discriminatedUnion("type", [
-  z.object({ type: z.literal("stat"), stat: statKeySchema, delta: z.number() }),
+  z.object({ type: z.literal("attribute"), attribute: attributeKeySchema, delta: z.number() }),
+  z.object({ type: z.literal("condition"), condition: conditionKeySchema, delta: z.number() }),
+  z.object({ type: z.literal("knowledge"), knowledge: knowledgeKeySchema, delta: z.number() }),
+  z.object({ type: z.literal("reputation"), delta: z.number() }),
   z.object({ type: z.literal("money"), deltaCents: z.number().int() }),
   z.object({ type: z.literal("flag"), flag: z.string().min(1), value: z.boolean() }),
   z.object({ type: z.literal("advance_time"), minutes: z.number().int().nonnegative() }),
@@ -42,9 +80,24 @@ const immediateEffectSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("set_location"), location: locationSchema }),
   z.object({
     type: z.literal("relationship"),
-    relationshipId: z.string().min(1),
+    personId: z.string().min(1),
     dimension: relationshipDimensionSchema,
     delta: z.number()
+  }),
+  z.object({
+    type: z.literal("add_memory"),
+    personId: z.string().min(1),
+    memory: memorySchema
+  }),
+  z.object({
+    type: z.literal("set_person_category"),
+    personId: z.string().min(1),
+    category: personCategorySchema
+  }),
+  z.object({
+    type: z.literal("set_person_presence"),
+    personId: z.string().min(1),
+    presence: personPresenceSchema
   })
 ]);
 
@@ -73,7 +126,7 @@ const skillOutcomeSchema = z.object({
 
 const skillCheckSchema = z.object({
   eventId: z.string().min(1),
-  stat: statKeySchema,
+  attribute: attributeKeySchema,
   difficulty: z.number().int().min(0).max(100),
   bonusFlags: z.array(z.object({
     flag: z.string().min(1),
@@ -89,6 +142,8 @@ export const storyNodeSchema = z.object({
   text: z.string().min(1),
   activity: z.string().min(1),
   nextCommitment: z.object({ label: z.string().min(1), clock: clockSchema }).optional(),
+  contextPersonIds: z.array(z.string().min(1)).optional(),
+  moduleId: z.string().min(1).optional(),
   ending: z.boolean().optional(),
   choices: z.array(z.object({
     id: z.string().min(1),

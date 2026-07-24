@@ -5,90 +5,52 @@ const requiredFiles = [
   "packages/game-engine/src/types.ts",
   "packages/game-engine/src/game.ts",
   "packages/game-engine/src/effects.ts",
-  "packages/game-engine/tests/game.test.ts",
-  "packages/narrative/src/content.ts",
-  "packages/narrative/src/schema.ts",
-  "packages/narrative/tests/integrity.test.ts",
+  "packages/narrative/src/pack.ts",
+  "packages/narrative/src/registry.ts",
+  "packages/narrative/src/templates.ts",
+  "packages/narrative/src/validation.ts",
   "apps/web/src/components/game-shell.tsx",
-  "apps/web/tests/e2e/game.spec.ts",
-  "docs/HANDOFF_REFERENCE.md"
+  "apps/web/tests/e2e/game.spec.ts"
 ];
-
 const failures = [];
 for (const file of requiredFiles) {
-  try {
-    await access(file, constants.R_OK);
-  } catch {
-    failures.push(`Arquivo obrigatório ausente: ${file}`);
-  }
+  try { await access(file, constants.R_OK); }
+  catch { failures.push(`Arquivo obrigatório ausente: ${file}`); }
 }
 
 const types = await readFile("packages/game-engine/src/types.ts", "utf8");
 for (const marker of [
-  "relationships",
-  "schedule_consequence",
-  "StorySkillCheck",
-  "TriggeredConsequence",
-  "schemaVersion: 2"
+  "schemaVersion: 3",
+  "ATTRIBUTE_KEYS",
+  "CONDITION_KEYS",
+  "KNOWLEDGE_KEYS",
+  "PersonState",
+  "ScheduledConsequence"
 ]) {
-  if (!types.includes(marker)) failures.push(`Contrato da Sprint 1 não contém: ${marker}`);
+  if (!types.includes(marker)) failures.push(`Contrato evoluído não contém: ${marker}`);
 }
 
-const game = await readFile("packages/game-engine/src/game.ts", "utf8");
-for (const marker of ["migrateGameState", "runSkillCheck", "processDueConsequences", "rollIndex"]) {
-  if (!game.includes(marker)) failures.push(`Motor da Sprint 1 não contém: ${marker}`);
-}
-
-const narrative = await readFile("packages/narrative/src/content.ts", "utf8");
+const shell = [
+  await readFile("apps/web/src/components/game-shell.tsx", "utf8"),
+  await readFile("apps/web/src/components/game-presentation.ts", "utf8")
+].join("\n");
 for (const marker of [
-  "school.group-conflict",
-  "school.presentation",
-  "schedule_consequence",
-  "school.formation-choice",
-  "ending.technical",
-  "ending.university",
-  "ending.online-work",
-  "ending.self-study"
+  "Atributos",
+  "Condições do momento",
+  "Conhecimentos",
+  "Pessoas da sua história",
+  "Quem é",
+  "Escolhas guardadas"
 ]) {
-  if (!narrative.includes(marker)) failures.push(`Narrativa da Sprint 1 não contém: ${marker}`);
+  if (!shell.includes(marker)) failures.push(`Interface evoluída não contém: ${marker}`);
 }
-
-const gameShell = await readFile("apps/web/src/components/game-shell.tsx", "utf8");
-for (const marker of [
-  "migrateGameState",
-  'data-testid="skill-result"',
-  'data-testid="triggered-consequence"',
-  "Pessoas importantes",
-  "Esta etapa da sua história chegou ao fim."
-]) {
-  if (!gameShell.includes(marker)) failures.push(`Interface da Sprint 1 não contém: ${marker}`);
-}
-
-for (const forbidden of [
-  "O save foi registrado e o relógio reflete o tempo consumido.",
-  "SPRINT 0 · VERTICAL SLICE TEXTUAL",
-  "Save local:"
-]) {
-  if (gameShell.includes(forbidden)) failures.push(`Texto técnico ainda visível ao jogador: ${forbidden}`);
-}
-
-const e2e = await readFile("apps/web/tests/e2e/game.spec.ts", "utf8");
-for (const marker of [
-  "A promessa da noite anterior",
-  "skill-result",
-  "O último dia de aula",
-  "Aprender fazendo",
-  "page.reload()"
-]) {
-  if (!e2e.includes(marker)) failures.push(`E2E da Sprint 1 não cobre: ${marker}`);
+for (const forbidden of ["Pessoas importantes</h2>", "Disciplina", "Save local:"]) {
+  if (shell.includes(forbidden)) failures.push(`Conceito substituído ainda aparece: ${forbidden}`);
 }
 
 if (failures.length > 0) {
-  console.error("Auditoria da Sprint 1 reprovada:");
-  for (const failure of failures) console.error(`- ${failure}`);
+  console.error("Auditoria de compatibilidade da Sprint 1 reprovada:");
+  failures.forEach((failure) => console.error(`- ${failure}`));
   process.exit(1);
 }
-
-console.log("Auditoria da Sprint 1 aprovada.");
-console.log(`Arquivos obrigatórios verificados: ${requiredFiles.length}`);
-console.log("Prólogo, habilidade, relação, consequência futura, formação e linguagem do jogador verificados.");
+console.log("Auditoria de compatibilidade da Sprint 1 aprovada.");
