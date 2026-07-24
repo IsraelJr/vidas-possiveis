@@ -16,6 +16,7 @@ const setup: GameScenarioSetup = {
   clock: { date: "2026-02-16", minuteOfDay: 6 * 60 + 10 },
   location: "home",
   moneyCents: 15_000,
+  initialKnowledge: { physics: 32 },
   flags: {},
   usedNames: { ana: "player" },
   variables: {},
@@ -49,9 +50,16 @@ describe("effects", () => {
 
     expect(result.state.attributes.selfControl).toBe(state.attributes.selfControl + 4);
     expect(result.state.conditions.energy).toBe(55);
-    expect(result.state.knowledge.physics).toBe(state.knowledge.physics + 5);
+    expect(result.state.knowledge.physics).toBe(37);
     expect(result.state.clock).toEqual({ date: "2026-02-16", minuteOfDay: 7 * 60 + 40 });
     expect(state.conditions.energy).toBe(75);
+  });
+
+  it("cria conhecimento definido apenas pelo pacote quando necessário", () => {
+    const result = applyEffects(state, [
+      { type: "knowledge", knowledge: "ball_control", delta: 5 }
+    ]);
+    expect(result.state.knowledge.ball_control).toBe(5);
   });
 
   it("registra memória e muda categoria preservando a identidade", () => {
