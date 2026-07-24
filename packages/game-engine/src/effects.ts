@@ -47,7 +47,7 @@ export function applyEffects(
         break;
       }
       case "knowledge": {
-        const before = nextState.knowledge[effect.knowledge];
+        const before = nextState.knowledge[effect.knowledge] ?? 0;
         const after = clampValue(before + effect.delta);
         const knowledge: KnowledgeState = { ...nextState.knowledge, [effect.knowledge]: after };
         nextState = { ...nextState, knowledge };
