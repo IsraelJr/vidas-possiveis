@@ -66,7 +66,7 @@ describe("canonical prologue pack", () => {
   it("é um pacote modular íntegro", () => {
     expect(validateNarrativePack(schoolProloguePack)).toEqual([]);
     expect(storyNodes.size).toBe(rawNodes.length);
-    expect(prologueModules.map((module) => module.id)).toEqual(expect.arrayContaining([
+    expect(prologueModules.map((narrativeModule) => narrativeModule.id)).toEqual(expect.arrayContaining([
       "prologue.first-week",
       "prologue.academic",
       "prologue.social",
@@ -114,7 +114,6 @@ describe("canonical prologue pack", () => {
   it("oferece contexto antes da decisão sobre o colega", () => {
     const player = profile("context");
     const setup = createPrologueSetup(player);
-    const state = createGameState(player, setup);
     const assignment = storyNodes.get("prologue.assignment")!;
     const message = storyNodes.get("prologue.group-message")!;
     expect(assignment.contextPersonIds).toContain("prologue-group-mate");
