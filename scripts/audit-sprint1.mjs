@@ -23,7 +23,8 @@ for (const marker of [
   "schemaVersion: 3",
   "ATTRIBUTE_KEYS",
   "CONDITION_KEYS",
-  "KNOWLEDGE_KEYS",
+  "KnowledgeKey = string",
+  "LocationId = string",
   "PersonState",
   "ScheduledConsequence"
 ]) {
