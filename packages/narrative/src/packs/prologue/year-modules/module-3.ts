@@ -1,8 +1,7 @@
 import type { StoryNode } from "@vidas-possiveis/game-engine";
-import * as S from "./shared";
 
 export const yearModulePart3: readonly StoryNode[] = [
-{
+  {
     id: "prologue.module-family",
     moduleId: "prologue.family",
     title: "Uma responsabilidade em casa",
