@@ -1,17 +1,25 @@
 # Referência canônica
 
-Este projeto segue o **Handoff Canônico Vidas Possíveis v0.9.0** e o **Prólogo Canônico v1.0**, consolidados em 24/07/2026.
+Este projeto segue:
 
-Antes de alterar motor, narrativa, personagens, relógio, atributos, relacionamentos ou conteúdo do prólogo, consulte obrigatoriamente:
+- **Handoff Canônico Vidas Possíveis v1.0.0**;
+- **Prólogo Canônico v1.0**;
+- **Arquitetura Canônica de Pacotes Narrativos v1.0.0**.
+
+Documentos consolidados em 24/07/2026.
+
+Antes de alterar motor, narrativa, personagens, relógio, atributos, relacionamentos, prólogo ou profissão, consulte obrigatoriamente:
 
 1. `docs/HANDOFF_CANONICAL.md`;
-2. `docs/PROLOGUE_CANONICAL.md`.
+2. `docs/PROLOGUE_CANONICAL.md` quando houver conteúdo escolar;
+3. `docs/NARRATIVE_PACKAGE_ARCHITECTURE.md` ao criar ou alterar pacotes.
 
 Em caso de divergência:
 
-- regras gerais de domínio e arquitetura: Handoff;
-- sequência, contexto e conteúdo escolar: Prólogo;
-- a decisão explicitamente mais recente prevalece.
+- domínio e regras universais: Handoff;
+- sequência e conteúdo escolar: Prólogo;
+- contratos de reutilização e profissões: Arquitetura de Pacotes;
+- decisão explicitamente mais recente prevalece.
 
 ## Estado de implementação
 
@@ -19,8 +27,11 @@ Em caso de divergência:
 - Sprint 1: concluída;
 - Prólogo Canônico v1.0: implementado no pacote `school-prologue`;
 - schema do progresso: versão 3;
-- arquitetura narrativa: pacotes e módulos;
-- próxima expansão: somente após validação completa do prólogo canônico.
+- narrativa: pacotes e módulos;
+- conhecimentos e locais: definidos por pacote;
+- interface: rótulos fornecidos pelo pacote;
+- prova de modularidade: pacote executável de jogador de futebol;
+- consolidação: PR #7, condicionado a CI, E2E e Vercel verdes.
 
 ## Regras que não podem ser ignoradas
 
@@ -33,4 +44,7 @@ Em caso de divergência:
 - atributos separados de condições e conhecimentos;
 - romance opcional e sem presunção pela identidade do jogador;
 - pessoas afastadas permanecem na memória;
-- conteúdo profissional deve entrar como novo pacote narrativo, não como regra especial no motor.
+- locais e conhecimentos não podem ser codificados no motor;
+- a interface não pode manter catálogos próprios de uma profissão;
+- conteúdo profissional entra como novo pacote, não como regra especial no motor;
+- novo pacote exige pesquisa, autoria, validação, simulação e E2E.
