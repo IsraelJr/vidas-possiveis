@@ -123,6 +123,12 @@ const skillCheckSchema = z.object({
   })),
   outcomes: z.record(outcomeTierSchema, skillOutcomeSchema)
 });
+const choiceOutcomeSchema = z.object({
+  title: z.string().min(1),
+  text: z.string().min(1),
+  continueLabel: z.string().min(1).optional(),
+  activity: z.string().min(1).optional()
+});
 
 export const storyNodeSchema = z.object({
   id: z.string().min(1),
@@ -139,6 +145,7 @@ export const storyNodeSchema = z.object({
     conditions: z.array(conditionSchema),
     effects: z.array(effectSchema),
     nextNodeId: z.string().min(1),
-    skillCheck: skillCheckSchema.optional()
+    skillCheck: skillCheckSchema.optional(),
+    outcome: choiceOutcomeSchema.optional()
   }))
 });
