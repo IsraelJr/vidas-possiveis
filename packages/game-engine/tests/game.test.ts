@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   chooseStoryOption,
+  continueStoryAfterOutcome,
   createGameState,
   getChoiceAvailability,
   migrateGameState,
@@ -76,6 +77,12 @@ const node: StoryNode = {
         { type: "relationship", personId: "person-1", dimension: "trust", delta: 4 }
       ],
       nextNodeId: "partial",
+      outcome: {
+        title: "A ação aconteceu",
+        text: "Rui age, percebe a reação de Paula e só então segue adiante.",
+        continueLabel: "Seguir a história",
+        activity: "Viver a reação à escolha"
+      },
       skillCheck: {
         eventId: "generic-action",
         attribute: "communication",
@@ -95,14 +102,44 @@ describe("game", () => {
     expect(blocked?.failedConditions).toEqual([{ type: "flag", flag: "allowed", value: true }]);
   });
 
-  it("usa teste determinístico e mantém o personId", () => {
+  it("narra a consequência antes de avançar e mantém o personId", () => {
     const state = createGameState(player, setup);
-    const next = chooseStoryOption(state, node, "present");
-    const result = next.history.at(-1)?.skillCheck;
+    const pending = chooseStoryOption(state, node, "present");
+    const result = pending.history.at(-1)?.skillCheck;
+
     expect(result).toBeDefined();
+    expect(pending.currentNodeId).toBe("start");
+    expect(pending.pendingOutcome).toMatchObject({
+      title: "A ação aconteceu",
+      text: "Rui age, percebe a reação de Paula e só então segue adiante.",
+      nextNodeId: outcomes[result!.outcome].nextNodeId
+    });
+    expect(pending.people["person-1"]?.name).toBe("Paula");
+    expect(pending.people["person-1"]?.trust).toBe(34);
+    expect(() => chooseStoryOption(pending, node, "present")).toThrow(/Conclua a consequência/);
+
+    const next = continueStoryAfterOutcome(pending);
     expect(next.currentNodeId).toBe(outcomes[result!.outcome].nextNodeId);
-    expect(next.people["person-1"]?.name).toBe("Paula");
-    expect(next.people["person-1"]?.trust).toBe(34);
+    expect(next.pendingOutcome).toBeUndefined();
+  });
+
+  it("cria uma consequência narrativa segura quando a escolha não declara uma própria", () => {
+    const fallbackNode: StoryNode = {
+      id: "start",
+      title: "Decisão simples",
+      text: "Escolha.",
+      activity: "Decidir",
+      choices: [{
+        id: "simple",
+        label: "Guardar o caderno",
+        conditions: [],
+        effects: [],
+        nextNodeId: "after"
+      }]
+    };
+    const pending = chooseStoryOption(createGameState(player, setup), fallbackNode, "simple");
+    expect(pending.pendingOutcome?.text).toContain("guardar o caderno");
+    expect(pending.pendingOutcome?.nextNodeId).toBe("after");
   });
 
   it("migra progresso antigo para o pacote atual sem perder o personagem", () => {
@@ -161,6 +198,21 @@ describe("game", () => {
     expect(migrated.flags.contentUpdated).toBe(true);
     expect(migrated.history).toHaveLength(1);
     expect(migrated.people["person-1"]?.id).toBe("person-1");
+  });
+
+  it("preserva uma consequência narrada pendente durante uma migração compatível", () => {
+    const oldState = chooseStoryOption(createGameState(player, setup), node, "present");
+    const upgradedSetup: GameScenarioSetup = {
+      ...setup,
+      contentVersion: "generic-2",
+      contentMigration: {
+        fromContentVersions: ["generic-1"],
+        noticeFlag: "contentUpdated"
+      }
+    };
+    const migrated = migrateGameState(oldState, upgradedSetup);
+    expect(migrated.pendingOutcome).toEqual(oldState.pendingOutcome);
+    expect(continueStoryAfterOutcome(migrated).currentNodeId).toBe(oldState.pendingOutcome?.nextNodeId);
   });
 
   it("reposiciona somente uma vida que concluiu a versão anterior", () => {
