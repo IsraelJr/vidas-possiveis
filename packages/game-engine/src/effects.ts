@@ -20,11 +20,25 @@ export interface EffectContext {
   readonly sourceChoiceId?: string;
 }
 
+function validateTimeTransitionBatch(effects: readonly Effect[]): void {
+  const transitions = effects.filter((effect) => effect.type === "time_transition");
+  if (transitions.length > 1) {
+    throw new Error("Uma única escolha não pode executar mais de uma transição temporal.");
+  }
+  if (transitions.length === 1 && effects.some((effect) => effect.type === "set_location")) {
+    throw new Error(
+      "Chegar a outro local e saltar no tempo não podem acontecer na mesma escolha. Conclua o deslocamento antes."
+    );
+  }
+}
+
 export function applyEffects(
   state: GameState,
   effects: readonly Effect[],
   context: EffectContext = {}
 ): EffectsResult {
+  validateTimeTransitionBatch(effects);
+
   let nextState = state;
   const changes: AppliedChange[] = [];
 
@@ -85,6 +99,36 @@ export function applyEffects(
         assertValidClock(effect.clock);
         if (compareClocks(effect.clock, nextState.clock) < 0) {
           throw new Error(`O relógio não pode retroceder de ${nextState.clock.date} para ${effect.clock.date}.`);
+        }
+        const before = nextState.clock;
+        const after = effect.clock;
+        nextState = { ...nextState, clock: after };
+        changes.push({ type: "clock", before, after });
+        break;
+      }
+      case "time_transition": {
+        assertValidClock(effect.clock);
+        if (compareClocks(effect.clock, nextState.clock) <= 0) {
+          throw new Error("Uma transição temporal precisa avançar o relógio.");
+        }
+        if (effect.kind === "sleep" && effect.clock.date === nextState.clock.date) {
+          throw new Error("Dormir para avançar a história precisa levar ao menos ao dia seguinte.");
+        }
+        if (effect.kind === "sleep" && !effect.requiredLocation) {
+          throw new Error("Uma transição por sono precisa declarar o local onde o personagem dorme.");
+        }
+        if (effect.requiredLocation && nextState.location !== effect.requiredLocation) {
+          throw new Error(
+            `O personagem precisa estar em ${effect.requiredLocation} antes desta transição temporal.`
+          );
+        }
+        const blockingConsequence = nextState.scheduledConsequences.find(
+          (item) => compareClocks(item.triggerAt, effect.clock) <= 0
+        );
+        if (blockingConsequence) {
+          throw new Error(
+            `A história não pode pular '${blockingConsequence.title}', previsto antes do destino temporal.`
+          );
         }
         const before = nextState.clock;
         const after = effect.clock;
