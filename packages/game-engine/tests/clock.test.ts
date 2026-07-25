@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { advanceClock, formatTime, minutesBetweenClocks } from "../src";
+import { advanceClock, formatDatePtBr, formatTime, minutesBetweenClocks } from "../src";
 
 describe("clock", () => {
   it("avança para o dia seguinte", () => {
@@ -23,6 +23,10 @@ describe("clock", () => {
       date: "2027-01-01",
       minuteOfDay: 10
     });
+  });
+
+  it("mantém o ano visível na data apresentada ao jogador", () => {
+    expect(formatDatePtBr("2027-02-08")).toContain("2027");
   });
 
   it("formata horário com zero à esquerda", () => {
