@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("joga o prólogo canônico, conhece o colega, respeita o relógio e mantém o progresso", async ({ page }) => {
+test("joga os dois anos escolares, vê o passado retornar e mantém o progresso", async ({ page }) => {
   await page.goto("/");
   await page.getByLabel("Nome").fill("Marina");
   await page.getByLabel("Personagem").selectOption("woman");
@@ -69,16 +69,44 @@ test("joga o prólogo canônico, conhece o colega, respeita o relógio e mantém
   await page.getByRole("button", { name: "Assumir a responsabilidade" }).click();
   await page.getByRole("button", { name: "Ajudar a organizar e apoiar a equipe" }).click();
   await page.getByRole("button", { name: "Investir em uma amizade e combinar de manter contato" }).click();
-  await page.getByRole("button", { name: "Guardar as lembranças e pensar no próximo passo" }).click();
+
+  await expect(page.getByRole("heading", { name: "O que você levou até o fim do ano" })).toBeVisible();
+  await page.getByRole("button", { name: "Não assumir uma rotina fixa e recuperar o fôlego" }).click();
+  await page.getByRole("button", { name: "Sair da escola e deixar o ano terminar" }).click();
+
+  await expect(page.getByRole("heading", { name: "Quando a escola some" })).toBeVisible();
+  await page.getByRole("button", { name: "Aceitar o silêncio e usar as férias para descansar" }).click();
+  await expect(page.getByRole("heading", { name: "A cadeira que ficou vazia" })).toBeVisible();
+  await expect(page.getByTestId("game-clock")).toContainText("2027");
+
+  await page.getByRole("button", { name: "Escolher outro lugar e deixar o ano começar diferente" }).click();
+  await page.getByRole("button", { name: "Procurar uma oportunidade de trabalho antes da formatura" }).click();
+
+  await expect(page.getByRole("heading", { name: "Alguém lembra" })).toBeVisible();
+  await expect(page.locator("section.panel.hero")).toContainText(/ano passado|trabalhar juntos|passado/);
+  await page.getByRole("button", { name: "Trabalhar junto, mas deixar os limites claros desde o começo" }).click();
+
+  await page.getByRole("button", { name: "Priorizar a apresentação e avisar em casa com antecedência" }).click();
+  await page.getByRole("button", { name: "Recusar e explicar por que esta semana não cabe mais nada" }).click();
+  await page.getByRole("button", { name: "Reduzir a carga por alguns dias e pedir ajuda antes de piorar" }).click();
+  await page.getByRole("button", { name: "Apresentar um plano, inclusive com custos, prazos e dúvidas" }).click();
+  await page.getByRole("button", { name: "Priorizar uma formação técnica e prática" }).click();
+
+  await expect(page.getByRole("heading", { name: "O último dia comum" })).toBeVisible();
+  await page.getByRole("button", { name: /Procurar .* antes que o dia termine/ }).click();
+  await expect(page.getByRole("heading", { name: "Formatura" })).toBeVisible();
+  await page.getByRole("button", { name: "Fazer uma última foto com quem ainda faz parte da sua vida" }).click();
+
+  await expect(page.getByRole("heading", { name: "Do lado de fora do portão" })).toBeVisible();
   await page.getByRole("button", { name: "Entrar em um curso técnico" }).click();
 
   await expect(page.getByRole("heading", { name: "Aprender fazendo" })).toBeVisible();
   await expect(page.getByText("Esta etapa da sua história chegou ao fim.")).toBeVisible();
-  await expect(page.getByTestId("current-time")).toHaveText("16:30");
+  await expect(page.getByTestId("current-time")).toHaveText("09:30");
   await expect(page.getByTestId("save-status")).toContainText("Escolhas guardadas");
 
   await page.reload();
   await expect(page.getByRole("heading", { name: "Aprender fazendo" })).toBeVisible();
-  await expect(page.getByTestId("current-time")).toHaveText("16:30");
+  await expect(page.getByTestId("current-time")).toHaveText("09:30");
   await expect(page.getByTestId("save-status")).toContainText("Escolhas guardadas");
 });

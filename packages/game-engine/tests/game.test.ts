@@ -119,6 +119,104 @@ describe("game", () => {
     expect(migrated.flags.migratedFromEarlierPrologue).toBe(true);
   });
 
+  it("preserva uma vida em andamento ao atualizar o conteúdo do mesmo pacote", () => {
+    const oldState = {
+      ...createGameState(player, { ...setup, contentVersion: "generic-1" }),
+      currentNodeId: "middle",
+      clock: { date: "2026-06-10", minuteOfDay: 14 * 60 },
+      moneyCents: 42_500,
+      flags: { allowed: true, rememberedChoice: true },
+      reputation: 27,
+      history: [
+        {
+          nodeId: "start",
+          choiceId: "present",
+          decidedAt: { date: "2026-02-16", minuteOfDay: 6 * 60 },
+          changes: []
+        }
+      ]
+    };
+    const upgradedSetup: GameScenarioSetup = {
+      ...setup,
+      contentVersion: "generic-2",
+      initialKnowledge: { planning: 20 },
+      flags: { allowed: false, newDefault: true },
+      contentMigration: {
+        fromContentVersions: ["generic-1"],
+        completionNodeIds: ["old-ending"],
+        resumeNodeId: "new-chapter",
+        resumeClock: { date: "2027-01-01", minuteOfDay: 9 * 60 },
+        noticeFlag: "contentUpdated"
+      }
+    };
+
+    const migrated = migrateGameState(oldState, upgradedSetup);
+    expect(migrated.contentVersion).toBe("generic-2");
+    expect(migrated.currentNodeId).toBe("middle");
+    expect(migrated.clock).toEqual(oldState.clock);
+    expect(migrated.moneyCents).toBe(42_500);
+    expect(migrated.reputation).toBe(27);
+    expect(migrated.flags.rememberedChoice).toBe(true);
+    expect(migrated.flags.newDefault).toBe(true);
+    expect(migrated.flags.contentUpdated).toBe(true);
+    expect(migrated.history).toHaveLength(1);
+    expect(migrated.people["person-1"]?.id).toBe("person-1");
+  });
+
+  it("reposiciona somente uma vida que concluiu a versão anterior", () => {
+    const oldState = {
+      ...createGameState(player, { ...setup, contentVersion: "generic-1" }),
+      currentNodeId: "old-ending",
+      clock: { date: "2026-12-18", minuteOfDay: 18 * 60 },
+      moneyCents: 31_000,
+      flags: { allowed: true, oldCompleted: true, oldPath: true },
+      people: {
+        ...createGameState(player, setup).people,
+        "person-1": {
+          ...createGameState(player, setup).people["person-1"]!,
+          trust: 44,
+          memories: [
+            {
+              id: "kept-memory",
+              summary: "Uma escolha antiga foi preservada.",
+              kind: "shared_work" as const,
+              occurredAt: { date: "2026-05-01", minuteOfDay: 10 * 60 },
+              intensity: 7,
+              resolved: true,
+              tags: ["migration"]
+            }
+          ]
+        }
+      }
+    };
+    const upgradedSetup: GameScenarioSetup = {
+      ...setup,
+      contentVersion: "generic-2",
+      flags: { allowed: false, newDefault: true },
+      contentMigration: {
+        fromContentVersions: ["generic-1"],
+        completionNodeIds: ["old-ending"],
+        completionFlag: "oldCompleted",
+        resumeNodeId: "new-chapter",
+        resumeClock: { date: "2027-02-08", minuteOfDay: 7 * 60 + 10 },
+        resumeLocation: "school",
+        resetFlags: ["oldCompleted", "oldPath"],
+        noticeFlag: "contentUpdated"
+      }
+    };
+
+    const migrated = migrateGameState(oldState, upgradedSetup);
+    expect(migrated.currentNodeId).toBe("new-chapter");
+    expect(migrated.clock).toEqual({ date: "2027-02-08", minuteOfDay: 7 * 60 + 10 });
+    expect(migrated.location).toBe("school");
+    expect(migrated.moneyCents).toBe(31_000);
+    expect(migrated.flags.oldCompleted).toBe(false);
+    expect(migrated.flags.oldPath).toBe(false);
+    expect(migrated.flags.contentUpdated).toBe(true);
+    expect(migrated.people["person-1"]?.trust).toBe(44);
+    expect(migrated.people["person-1"]?.memories[0]?.id).toBe("kept-memory");
+  });
+
   it("lê perfil antigo e não presume preferência romântica", () => {
     expect(readPersistedPlayerProfile({ player: { id: "x", name: "Leo", presentation: "man" } })).toEqual({
       id: "x",

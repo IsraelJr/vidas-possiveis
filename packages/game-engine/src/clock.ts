@@ -62,6 +62,7 @@ export function formatDatePtBr(date: string): string {
     weekday: "long",
     day: "2-digit",
     month: "long",
+    year: "numeric",
     timeZone: "UTC"
   }).format(parseDate(date));
 }

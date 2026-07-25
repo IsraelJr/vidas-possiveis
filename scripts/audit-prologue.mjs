@@ -24,16 +24,20 @@ const yearModuleFiles = [
 const requiredFiles = [
   "docs/HANDOFF_CANONICAL.md",
   "docs/HANDOFF_REFERENCE.md",
+  "docs/NARRATIVE_BIBLE.md",
   "docs/PROLOGUE_CANONICAL.md",
   "docs/PROLOGUE_CANONICAL_SOURCE_POINTER.md",
   "docs/PROLOGUE_IMPLEMENTATION_AUDIT.md",
   "docs/NARRATIVE_PACKAGE_ARCHITECTURE.md",
   "packages/game-engine/src/random.ts",
+  "packages/game-engine/src/game.ts",
   "packages/narrative/src/pack.ts",
   "packages/narrative/src/registry.ts",
   "packages/narrative/src/validation.ts",
   "packages/narrative/src/packs/prologue/cast.ts",
   "packages/narrative/src/packs/prologue/endings.ts",
+  "packages/narrative/src/packs/prologue/two-year-transition.ts",
+  "packages/narrative/src/packs/prologue/third-year.ts",
   "packages/narrative/tests/integrity.test.ts",
   "packages/narrative/tests/modularity.test.ts",
   ...firstWeekFiles,
@@ -74,9 +78,46 @@ for (const marker of [
   "prologue.module-social",
   "prologue.module-family",
   "prologue.module-physical",
-  "prologue.module-relationship"
+  "prologue.module-relationship",
+  "footballBridgeActive",
+  "prologue.second-year-vocational-review"
 ]) {
-  if (!yearModules.includes(marker)) failures.push(`Módulos do ano não contêm: ${marker}`);
+  if (!yearModules.includes(marker)) failures.push(`Módulos do segundo ano não contêm: ${marker}`);
+}
+
+const transition = await readFile("packages/narrative/src/packs/prologue/two-year-transition.ts", "utf8");
+for (const marker of [
+  "prologue.second-year-close",
+  "prologue.vacation-transition",
+  "2027-02-08",
+  "prologue.third-year-opening",
+  "completedSecondYear"
+]) {
+  if (!transition.includes(marker)) failures.push(`Passagem de ano não contém: ${marker}`);
+}
+
+const thirdYear = await readFile("packages/narrative/src/packs/prologue/third-year.ts", "utf8");
+for (const marker of [
+  "prologue.third-year-deadline",
+  "prologue.third-year-return",
+  "prologue.third-year-schedule-conflict",
+  "prologue.third-year-health",
+  "prologue.last-ordinary-day",
+  "prologue.graduation",
+  "completedTwoYearSchool"
+]) {
+  if (!thirdYear.includes(marker)) failures.push(`Terceiro ano não contém: ${marker}`);
+}
+
+const engine = await readFile("packages/game-engine/src/game.ts", "utf8");
+for (const marker of [
+  "migrateCompatibleContent",
+  "fromContentVersions",
+  "completionNodeIds",
+  "resumeNodeId",
+  "candidate.history"
+]) {
+  if (!engine.includes(marker)) failures.push(`Migração compatível não contém: ${marker}`);
 }
 
 const tests = await readFile("packages/narrative/tests/integrity.test.ts", "utf8");
@@ -85,9 +126,27 @@ for (const marker of [
   "não reutiliza nome",
   "contexto antes da decisão",
   "25",
-  "activity === \"Apresentar o trabalho\""
+  "activity === \"Apresentar o trabalho\"",
+  "prologue.vacation-transition",
+  "prologue.third-year-return",
+  "prologue.graduation",
+  "preserva pessoas, memórias e recursos",
+  "confirma respeitosamente"
 ]) {
   if (!tests.includes(marker)) failures.push(`Testes canônicos não cobrem: ${marker}`);
+}
+
+const e2e = await readFile("apps/web/tests/e2e/game.spec.ts", "utf8");
+for (const marker of [
+  "Quando a escola some",
+  "A cadeira que ficou vazia",
+  "Alguém lembra",
+  "O último dia comum",
+  "Formatura",
+  "Do lado de fora do portão",
+  "page.reload"
+]) {
+  if (!e2e.includes(marker)) failures.push(`E2E dos dois anos não contém: ${marker}`);
 }
 
 const modularity = await readFile("packages/narrative/tests/modularity.test.ts", "utf8");
@@ -104,7 +163,10 @@ for (const marker of [
 
 const shell = await readFile("apps/web/src/components/game-shell.tsx", "utf8");
 for (const marker of [
-  "Classe média · 17 anos · 3º ano do Ensino Médio",
+  "aproximadamente 16 anos · 2º ano do Ensino Médio",
+  "atravesse dois anos do Ensino Médio",
+  "migratedToTwoYearPrologue",
+  "pessoas e lembranças compatíveis foram preservadas",
   "person-context",
   "Possível interesse romântico",
   "pack.presentation",
@@ -115,12 +177,27 @@ for (const marker of [
 
 const prologuePack = await readFile("packages/narrative/src/packs/prologue/index.ts", "utf8");
 for (const marker of [
+  "prologue-2.0",
+  "twoYearTransitionNodes",
+  "thirdYearNodes",
+  "contentMigration",
+  "footballLifeOwned",
   "Reputação na escola",
   "knowledgeLabels",
   "locationLabels",
   "initialKnowledge"
 ]) {
   if (!prologuePack.includes(marker)) failures.push(`Pacote do prólogo não contém: ${marker}`);
+}
+
+const endings = await readFile("packages/narrative/src/packs/prologue/endings.ts", "utf8");
+for (const marker of [
+  "ending.football",
+  "prologue.confirm-technical",
+  "continuará disponível em novas vidas",
+  "completedSchoolPrologue"
+]) {
+  if (!endings.includes(marker)) failures.push(`Transição pós-escola não contém: ${marker}`);
 }
 
 const architecture = await readFile("docs/NARRATIVE_PACKAGE_ARCHITECTURE.md", "utf8");
@@ -132,10 +209,20 @@ for (const marker of [
   if (!architecture.includes(marker)) failures.push(`Arquitetura canônica não contém: ${marker}`);
 }
 
+const bible = await readFile("docs/NARRATIVE_BIBLE.md", "utf8");
+for (const marker of [
+  "Narração direta na ação",
+  "Convergência com marcas",
+  "Modelo universal de cena",
+  "Rubrica de avaliação de cena"
+]) {
+  if (!bible.includes(marker)) failures.push(`Bíblia narrativa não contém: ${marker}`);
+}
+
 if (failures.length > 0) {
   console.error("Auditoria do Prólogo Canônico reprovada:");
   failures.forEach((failure) => console.error(`- ${failure}`));
   process.exit(1);
 }
 console.log("Auditoria do Prólogo Canônico aprovada.");
-console.log("Elenco, identidade, contexto, tempo e execução de pacote profissional independente foram verificados.");
+console.log("Dois anos escolares, migração de saves, retorno de memórias, formatura, escolha pós-escola e modularidade profissional foram verificados.");
