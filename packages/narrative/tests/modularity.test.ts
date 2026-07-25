@@ -1,5 +1,6 @@
 import {
   chooseStoryOption,
+  continueStoryAfterOutcome,
   createGameState,
   type GameScenarioSetup,
   type PlayerProfile,
@@ -103,19 +104,24 @@ describe("narrative modularity", () => {
     expect(validateNarrativePack(footballPack)).toEqual([]);
   });
 
-  it("executa uma vida de futebol no mesmo motor", () => {
+  it("executa uma vida de futebol no mesmo motor e narra a transição", () => {
     const initial = createGameState(player, footballPack.createSetup(player));
     expect(initial.scenario.id).toBe("profession-football");
     expect(initial.location).toBe("training_ground");
     expect(initial.knowledge.ball_control).toBe(25);
     expect(initial.knowledge.mathematics).toBeUndefined();
 
-    const next = chooseStoryOption(initial, footballPack.getNode(initial.currentNodeId), "train");
+    const pending = chooseStoryOption(initial, footballPack.getNode(initial.currentNodeId), "train");
+    expect(pending.currentNodeId).toBe("football.training");
+    expect(pending.pendingOutcome?.nextNodeId).toBe("football.end");
+    expect(pending.pendingOutcome?.text).toContain("participar do treino técnico");
+    expect(pending.location).toBe("locker_room");
+    expect(pending.knowledge.ball_control).toBe(30);
+    expect(pending.conditions.energy).toBe(initial.conditions.energy - 10);
+    expect(pending.clock.minuteOfDay).toBe(10 * 60);
+
+    const next = continueStoryAfterOutcome(pending);
     expect(next.currentNodeId).toBe("football.end");
-    expect(next.location).toBe("locker_room");
-    expect(next.knowledge.ball_control).toBe(30);
-    expect(next.conditions.energy).toBe(initial.conditions.energy - 10);
-    expect(next.clock.minuteOfDay).toBe(10 * 60);
     expect(footballPack.getNode(next.currentNodeId).ending).toBe(true);
   });
 
