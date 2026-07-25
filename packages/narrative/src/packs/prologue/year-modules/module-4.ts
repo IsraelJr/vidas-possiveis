@@ -2,11 +2,11 @@ import type { StoryNode } from "@vidas-possiveis/game-engine";
 import * as S from "./shared";
 
 export const yearModulePart4: readonly StoryNode[] = [
-{
+  {
     id: "prologue.module-physical",
     moduleId: "prologue.physical",
     title: "Jogos entre turmas",
-    text: "A escola organiza uma competição de {peActivity}. O clima de torcida aumenta e {rivalName} provoca sua turma antes da atividade.",
+    text: "A escola organiza uma competição de {peActivity}. O clima de torcida aumenta e {rivalName} provoca sua turma antes da atividade. Para algumas pessoas, é só mais uma manhã na quadra. Para outras, pode ser o começo de uma rotina que continuará depois do sinal.",
     activity: "Participar dos jogos entre turmas",
     contextPersonIds: [S.FRIEND, S.RIVAL],
     choices: [
@@ -18,6 +18,22 @@ export const yearModulePart4: readonly StoryNode[] = [
           { type: "attribute", attribute: "vigor", delta: 3 },
           { type: "attribute", attribute: "agility", delta: 3 },
           { type: "condition", condition: "energy", delta: -10 },
+          { type: "reputation", delta: 2 },
+          { type: "set_clock", clock: { date: "2026-11-20", minuteOfDay: 12 * 60 } }
+        ],
+        nextNodeId: "prologue.module-relationship"
+      },
+      {
+        id: "accept-football-routine",
+        label: "Aceitar o convite para treinar durante a semana e jogar nos fins de semana",
+        conditions: [{ type: "flag", flag: "footballLifeOwned", value: true }],
+        effects: [
+          { type: "flag", flag: "footballBridgeActive", value: true },
+          { type: "knowledge", knowledge: "ballControl", delta: 5 },
+          { type: "knowledge", knowledge: "tactics", delta: 3 },
+          { type: "attribute", attribute: "vigor", delta: 2 },
+          { type: "condition", condition: "energy", delta: -8 },
+          { type: "money", deltaCents: -2500 },
           { type: "reputation", delta: 2 },
           { type: "set_clock", clock: { date: "2026-11-20", minuteOfDay: 12 * 60 } }
         ],
