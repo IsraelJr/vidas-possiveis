@@ -15,6 +15,7 @@ import {
 import { addChoiceContinuity } from "./choice-continuity";
 import { endingNodes } from "./endings";
 import { firstWeekNodes } from "./first-week/index";
+import { addMondayTemporalContinuity } from "./monday-temporal-continuity";
 import { addTemporalContinuity } from "./temporal-continuity";
 import { thirdYearNodes } from "./third-year";
 import { twoYearTransitionNodes } from "./two-year-transition";
@@ -28,7 +29,9 @@ const sourceNodes = [
   ...endingNodes
 ];
 
-const allNodes = addChoiceContinuity(addTemporalContinuity(sourceNodes));
+const allNodes = addChoiceContinuity(
+  addTemporalContinuity(addMondayTemporalContinuity(sourceNodes))
+);
 
 function createModules(nodes: readonly StoryNode[]): readonly NarrativeModule[] {
   const groups = new Map<string, StoryNode[]>();
