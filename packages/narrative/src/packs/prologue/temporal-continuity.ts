@@ -1,5 +1,7 @@
 import type { Effect, StoryChoice, StoryNode } from "@vidas-possiveis/game-engine";
 
+type ChoiceOutcome = NonNullable<StoryChoice["outcome"]>;
+
 const GOSSIP_CHOICES_THAT_FINISH_AT_SCHOOL = new Set([
   "talk-privately",
   "ignore-gossip",
@@ -16,7 +18,7 @@ function withoutTeleport(effects: readonly Effect[]): readonly Effect[] {
 function rewireGossipChoice(choice: StoryChoice): StoryChoice {
   if (!GOSSIP_CHOICES_THAT_FINISH_AT_SCHOOL.has(choice.id)) return choice;
 
-  const outcomes: Record<string, StoryChoice["outcome"]> = {
+  const outcomes: Record<string, ChoiceOutcome> = {
     "talk-privately": {
       title: "Uma conversa sem plateia",
       text: "Você chama {rivalName} para um canto e fala sem a turma ao redor. A conversa reduz a exposição daquele momento, mas o sinal ainda não tocou e o restante das aulas continua.",
@@ -42,16 +44,18 @@ function rewireGossipChoice(choice: StoryChoice): StoryChoice {
       activity: "Retomar o dia escolar"
     }
   };
+  const outcome = outcomes[choice.id];
+  if (!outcome) return choice;
 
   return {
     ...choice,
     nextNodeId: "prologue.school-day-continuation",
-    outcome: outcomes[choice.id]
+    outcome
   };
 }
 
 function rewireFightConsequenceChoice(choice: StoryChoice): StoryChoice {
-  const outcomes: Record<string, StoryChoice["outcome"]> = {
+  const outcomes: Record<string, ChoiceOutcome> = {
     "tell-group-about-fight": {
       title: "O grupo recebe a verdade",
       text: "Você conta que se envolveu em uma briga e que não voltará para as aulas naquele turno. As respostas misturam preocupação e irritação. A escola ainda não liberou sua saída: primeiro um responsável precisa chegar.",
@@ -71,17 +75,19 @@ function rewireFightConsequenceChoice(choice: StoryChoice): StoryChoice {
       activity: "Esperar a saída da escola"
     }
   };
+  const outcome = outcomes[choice.id];
+  if (!outcome) return choice;
 
   return {
     ...choice,
     effects: [...withoutTeleport(choice.effects), { type: "advance_time", minutes: 30 }],
     nextNodeId: "prologue.fight-school-exit",
-    outcome: outcomes[choice.id] ?? choice.outcome
+    outcome
   };
 }
 
 function rewireFightClosureChoice(choice: StoryChoice): StoryChoice {
-  const outcomes: Record<string, StoryChoice["outcome"]> = {
+  const outcomes: Record<string, ChoiceOutcome> = {
     "resume-presentation-after-fight": {
       title: "O trabalho volta para a tela",
       text: "Depois da conversa em casa, você abre as mensagens do grupo, entende o que mudou no ensaio e retoma sua parte. A briga não desapareceu, mas as consequências imediatas daquele dia foram enfrentadas. Agora falta encerrar a noite e dormir.",
@@ -95,11 +101,13 @@ function rewireFightClosureChoice(choice: StoryChoice): StoryChoice {
       activity: "Encerrar a noite descansando"
     }
   };
+  const outcome = outcomes[choice.id];
+  if (!outcome) return choice;
 
   return {
     ...choice,
     nextNodeId: "prologue.wednesday-bedtime",
-    outcome: outcomes[choice.id] ?? choice.outcome
+    outcome
   };
 }
 
