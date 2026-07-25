@@ -73,8 +73,16 @@ describe("guarded temporal transitions", () => {
   });
 
   it("impede usar o sono como salto fora de uma cena de fim de dia", () => {
+    const nodeWithoutBoundary: StoryNode = {
+      id: "bedtime",
+      title: "Fim do dia",
+      text: "O dia terminou.",
+      activity: "Dormir",
+      choices: bedtimeNode().choices
+    };
+
     expect(() =>
-      chooseStoryOption(stateAt(), bedtimeNode({ timeBoundary: undefined }), "sleep")
+      chooseStoryOption(stateAt(), nodeWithoutBoundary, "sleep")
     ).toThrow("só pode avançar pelo sono depois que o dia estiver encerrado");
   });
 
