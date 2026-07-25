@@ -125,13 +125,15 @@ export function applyEffects(
             `O personagem precisa estar em ${effect.requiredLocation} antes desta transição temporal.`
           );
         }
-        const blockingConsequence = nextState.scheduledConsequences.find(
-          (item) => compareClocks(item.triggerAt, effect.clock) <= 0
-        );
-        if (blockingConsequence) {
-          throw new Error(
-            `A história não pode pular '${blockingConsequence.title}', previsto antes do destino temporal.`
+        if (effect.kind !== "sleep") {
+          const blockingConsequence = nextState.scheduledConsequences.find(
+            (item) => compareClocks(item.triggerAt, effect.clock) <= 0
           );
+          if (blockingConsequence) {
+            throw new Error(
+              `A história não pode pular '${blockingConsequence.title}', previsto antes do destino temporal.`
+            );
+          }
         }
         const before = nextState.clock;
         const after = effect.clock;
