@@ -97,11 +97,11 @@ export function applyEffects(
       }
       case "set_clock": {
         assertValidClock(effect.clock);
-        if (effect.clock.date !== nextState.clock.date) {
-          throw new Error("Mudar de dia exige uma transição temporal explícita.");
-        }
         if (compareClocks(effect.clock, nextState.clock) < 0) {
           throw new Error(`O relógio não pode retroceder de ${nextState.clock.date} para ${effect.clock.date}.`);
+        }
+        if (effect.clock.date !== nextState.clock.date) {
+          throw new Error("Mudar de dia exige uma transição temporal explícita.");
         }
         const before = nextState.clock;
         const after = effect.clock;
