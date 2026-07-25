@@ -200,6 +200,22 @@ export interface GameState {
   readonly scheduledConsequences: readonly ScheduledConsequence[];
 }
 
+/**
+ * Migração declarativa entre versões do mesmo pacote narrativo.
+ * O motor preserva o estado compatível e só reposiciona vidas que já haviam
+ * concluído a versão anterior.
+ */
+export interface ScenarioContentMigration {
+  readonly fromContentVersions: readonly string[];
+  readonly completionNodeIds?: readonly string[];
+  readonly completionFlag?: string;
+  readonly resumeNodeId?: string;
+  readonly resumeClock?: GameClock;
+  readonly resumeLocation?: LocationId;
+  readonly resetFlags?: readonly string[];
+  readonly noticeFlag?: string;
+}
+
 export interface GameScenarioSetup {
   readonly id: string;
   readonly contentVersion: string;
@@ -215,6 +231,7 @@ export interface GameScenarioSetup {
   readonly people: Readonly<Record<string, PersonState>>;
   readonly usedNames: Readonly<Record<string, string>>;
   readonly variables: Readonly<Record<string, string>>;
+  readonly contentMigration?: ScenarioContentMigration;
 }
 
 export interface SkillCheckBonusFlag { readonly flag: string; readonly label: string; readonly value: number; }
