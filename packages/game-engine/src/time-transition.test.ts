@@ -113,7 +113,28 @@ describe("guarded temporal transitions", () => {
     ).toThrow("Conclua o deslocamento antes");
   });
 
-  it("impede saltar uma consequência programada antes do horário de destino", () => {
+  it("aplica ao acordar uma consequência que venceu durante o sono", () => {
+    const state = stateAt({
+      scheduledConsequences: [
+        {
+          id: "overnight-fatigue",
+          sourceChoiceId: "earlier-choice",
+          title: "O cansaço aparece",
+          text: "O esforço do dia anterior pesa ao acordar.",
+          triggerAt: { date: "2026-02-19", minuteOfDay: 5 * 60 },
+          effects: [{ type: "condition", condition: "energy", delta: -5 }]
+        }
+      ]
+    });
+
+    const result = chooseStoryOption(state, bedtimeNode(), "sleep");
+
+    expect(result.scheduledConsequences).toHaveLength(0);
+    expect(result.conditions.energy).toBe(state.conditions.energy - 5);
+    expect(result.history.at(-1)?.triggeredConsequences?.[0]?.id).toBe("overnight-fatigue");
+  });
+
+  it("impede uma montagem de tempo de atravessar consequência programada", () => {
     const state = stateAt({
       scheduledConsequences: [
         {
@@ -131,9 +152,9 @@ describe("guarded temporal transitions", () => {
       applyEffects(state, [
         {
           type: "time_transition",
-          kind: "sleep",
+          kind: "montage",
           requiredLocation: "home",
-          clock: { date: "2026-02-19", minuteOfDay: 6 * 60 + 30 }
+          clock: { date: "2026-02-25", minuteOfDay: 6 * 60 + 30 }
         }
       ])
     ).toThrow("não pode pular 'Ligação da família'");
