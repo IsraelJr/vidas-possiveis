@@ -12,6 +12,7 @@ import {
   createPrologueSetup as createPrologueCastSetup,
   PROLOGUE_PERSON_IDS
 } from "./cast";
+import { addChoiceContinuity } from "./choice-continuity";
 import { endingNodes } from "./endings";
 import { firstWeekNodes } from "./first-week/index";
 import { thirdYearNodes } from "./third-year";
@@ -24,7 +25,7 @@ const allNodes = [
   ...twoYearTransitionNodes,
   ...thirdYearNodes,
   ...endingNodes
-];
+].map(addChoiceContinuity);
 
 function createModules(nodes: readonly StoryNode[]): readonly NarrativeModule[] {
   const groups = new Map<string, StoryNode[]>();
