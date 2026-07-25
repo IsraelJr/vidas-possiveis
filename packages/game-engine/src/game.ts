@@ -10,6 +10,7 @@ import {
 } from "./stats";
 import type {
   AppliedChange,
+  Effect,
   GameScenarioSetup,
   GameState,
   NarrativeChoiceOutcome,
@@ -252,6 +253,30 @@ function defaultChoiceOutcome(choice: StoryChoice): NarrativeChoiceOutcome {
   };
 }
 
+function validateTemporalEffects(node: StoryNode, effects: readonly Effect[]): void {
+  const transitions = effects.filter((effect) => effect.type === "time_transition");
+  if (transitions.length === 0) return;
+  if (transitions.length > 1) {
+    throw new Error("Uma escolha não pode executar mais de uma transição temporal.");
+  }
+
+  const transition = transitions[0];
+  const requiredBoundary = transition.kind === "sleep" ? "day-end" : "montage";
+  if (node.timeBoundary !== requiredBoundary) {
+    throw new Error(
+      transition.kind === "sleep"
+        ? "A história só pode avançar pelo sono depois que o dia estiver encerrado."
+        : "Este salto de tempo só pode acontecer em uma passagem narrativa preparada para isso."
+    );
+  }
+
+  if (node.nextCommitment && compareClocks(transition.clock, node.nextCommitment.clock) > 0) {
+    throw new Error(
+      `A transição tentaria pular o compromisso '${node.nextCommitment.label}'.`
+    );
+  }
+}
+
 export function chooseStoryOption(state: GameState, node: StoryNode, choiceId: string): GameState {
   if (state.pendingOutcome) {
     throw new Error("Conclua a consequência narrativa antes de fazer outra escolha.");
@@ -264,6 +289,7 @@ export function chooseStoryOption(state: GameState, node: StoryNode, choiceId: s
   if (!choice) throw new Error(`Escolha inexistente: ${choiceId}`);
   if (!conditionsAreMet(state, choice.conditions)) throw new Error(`Escolha indisponível: ${choiceId}`);
 
+  validateTemporalEffects(node, choice.effects);
   const baseResult = applyEffects(state, choice.effects, { sourceChoiceId: choice.id });
   let nextState = baseResult.state;
   const changes: AppliedChange[] = [...baseResult.changes];
@@ -279,6 +305,7 @@ export function chooseStoryOption(state: GameState, node: StoryNode, choiceId: s
       modifiers: buildSkillModifiers(nextState, choice)
     });
     const outcome = choice.skillCheck.outcomes[skillCheckResult.outcome];
+    validateTemporalEffects(node, outcome.effects);
     const outcomeResult = applyEffects(nextState, outcome.effects, { sourceChoiceId: choice.id });
     nextState = { ...outcomeResult.state, rollIndex: nextState.rollIndex + 1 };
     changes.push(...outcomeResult.changes);
