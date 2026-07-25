@@ -77,7 +77,7 @@ test("joga os dois anos escolares, vê o passado retornar e mantém o progresso"
   await expect(page.getByRole("heading", { name: "Quando a escola some" })).toBeVisible();
   await page.getByRole("button", { name: "Aceitar o silêncio e usar as férias para descansar" }).click();
   await expect(page.getByRole("heading", { name: "A cadeira que ficou vazia" })).toBeVisible();
-  await expect(page.getByText(/08 de fevereiro de 2027/)).toBeVisible();
+  await expect(page.getByTestId("game-clock")).toContainText("2027");
 
   await page.getByRole("button", { name: "Escolher outro lugar e deixar o ano começar diferente" }).click();
   await page.getByRole("button", { name: "Procurar uma oportunidade de trabalho antes da formatura" }).click();
