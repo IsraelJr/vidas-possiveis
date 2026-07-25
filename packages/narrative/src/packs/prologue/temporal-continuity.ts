@@ -1,8 +1,9 @@
-import type {
-  Effect,
-  GameClock,
-  StoryChoice,
-  StoryNode
+import {
+  compareClocks,
+  type Effect,
+  type GameClock,
+  type StoryChoice,
+  type StoryNode
 } from "@vidas-possiveis/game-engine";
 
 type ChoiceOutcome = NonNullable<StoryChoice["outcome"]>;
@@ -64,14 +65,12 @@ function rewireAfterSchoolChoice(choice: StoryChoice): StoryChoice {
   const outcome = outcomes[choice.id];
   if (!outcome) return choice;
 
-  const effects =
-    choice.id === "decline-and-explain"
-      ? choice.effects.filter((effect) => effect.type !== "set_location")
-      : choice.effects;
-
   return {
     ...choice,
-    effects,
+    effects:
+      choice.id === "decline-and-explain"
+        ? choice.effects.filter((effect) => effect.type !== "set_location")
+        : choice.effects,
     nextNodeId: "prologue.tuesday-route-home",
     outcome
   };
@@ -280,18 +279,22 @@ function applySpecificContinuity(node: StoryNode): StoryNode {
   return node;
 }
 
+function shouldRouteThroughDayClosure(node: StoryNode, targetClock: GameClock): boolean {
+  if (node.nextCommitment) {
+    return compareClocks(targetClock, node.nextCommitment.clock) > 0;
+  }
+
+  return node.id === "prologue.group-aftermath" || node.moduleId !== "prologue.first-week";
+}
+
 function rewriteLongTemporalChoice(
   node: StoryNode,
   choice: StoryChoice,
   routes: LongTemporalRoute[]
 ): StoryChoice {
-  const referenceDate = node.nextCommitment?.clock.date;
-  const clockEffect = choice.effects.find(
-    (effect) =>
-      effect.type === "set_clock" &&
-      (referenceDate === undefined || effect.clock.date !== referenceDate)
-  );
+  const clockEffect = choice.effects.find((effect) => effect.type === "set_clock");
   if (!clockEffect || clockEffect.type !== "set_clock") return choice;
+  if (!shouldRouteThroughDayClosure(node, clockEffect.clock)) return choice;
 
   const locationEffect = choice.effects.find((effect) => effect.type === "set_location");
   const routeNumber = routes.length + 1;
@@ -306,27 +309,25 @@ function rewriteLongTemporalChoice(
   };
   routes.push(route);
 
-  const existingText = choice.outcome?.text ?? "A decisão encontra uma consequência naquele momento.";
+  const sourceText = choice.outcome?.text ?? "A decisão produz suas consequências naquele momento.";
   return {
     ...choice,
     effects: [
-      ...choice.effects.filter(
-        (effect) => effect.type !== "set_clock" && effect.type !== "set_location"
-      ),
+      ...withoutTeleport(choice.effects),
       { type: "flag", flag: route.flag, value: true }
     ],
     nextNodeId: "prologue.long-transition-finish-day",
     outcome: {
       title: choice.outcome?.title ?? "O acontecimento termina",
-      text: `${existingText} Antes que semanas ou meses avancem, o restante desse dia ainda precisa acontecer.`,
+      text: `${sourceText} O calendário não avançará antes de você concluir esse dia, voltar para casa e dormir.`,
       continueLabel: "Concluir o restante do dia",
       activity: "Encerrar o dia antes da passagem do tempo"
     }
   };
 }
 
-function routeConditions(route: LongTemporalRoute) {
-  return [{ type: "flag" as const, flag: route.flag, value: true }];
+function routeCondition(route: LongTemporalRoute) {
+  return { type: "flag" as const, flag: route.flag, value: true };
 }
 
 function buildLongTemporalBridgeNodes(routes: readonly LongTemporalRoute[]): readonly StoryNode[] {
@@ -337,12 +338,12 @@ function buildLongTemporalBridgeNodes(routes: readonly LongTemporalRoute[]): rea
       id: "prologue.long-transition-finish-day",
       moduleId: "prologue.temporal-bridges",
       title: "O restante do dia",
-      text: "O acontecimento principal terminou, mas o relógio continua no mesmo dia. Ainda existem as atividades restantes, a saída e o momento de deixar esse local.",
+      text: "O acontecimento principal terminou, mas o relógio continua no mesmo dia. Ainda existem as atividades restantes e o momento de deixar esse local.",
       activity: "Concluir o dia antes de voltar para casa",
       choices: routes.map((route) => ({
         id: `finish-${route.id}`,
         label: "Concluir o que resta do dia",
-        conditions: routeConditions(route),
+        conditions: [routeCondition(route)],
         effects: [
           { type: "advance_time" as const, minutes: 90 },
           { type: "condition" as const, condition: "energy" as const, delta: -3 }
@@ -360,12 +361,12 @@ function buildLongTemporalBridgeNodes(routes: readonly LongTemporalRoute[]): rea
       id: "prologue.long-transition-travel-home",
       moduleId: "prologue.temporal-bridges",
       title: "O caminho de volta",
-      text: "Chegar em casa exige um trajeto. O cenário muda aos poucos enquanto o personagem deixa o local do acontecimento e segue para o próprio bairro.",
+      text: "Chegar em casa exige um trajeto. O cenário muda aos poucos enquanto você deixa o local do acontecimento e segue para o próprio bairro.",
       activity: "Concluir o deslocamento para casa",
       choices: routes.map((route) => ({
         id: `travel-${route.id}`,
         label: "Completar o trajeto até casa",
-        conditions: routeConditions(route),
+        conditions: [routeCondition(route)],
         effects: [
           { type: "advance_time" as const, minutes: 50 },
           { type: "set_location" as const, location: "home" }
@@ -383,45 +384,21 @@ function buildLongTemporalBridgeNodes(routes: readonly LongTemporalRoute[]): rea
       id: "prologue.long-transition-evening",
       moduleId: "prologue.temporal-bridges",
       title: "A noite em casa",
-      text: "A chegada não encerra o dia sozinha. Comida, descanso, mensagens e convivência ocupam as horas seguintes até que não reste outra ação imediata aberta.",
-      activity: "Encerrar a noite em casa",
-      choices: routes.map((route) => ({
-        id: `evening-${route.id}`,
-        label: "Viver a noite e preparar-se para dormir",
-        conditions: [
-          ...routeConditions(route),
-          { type: "location" as const, value: "home" }
-        ],
-        effects: [
-          { type: "advance_time" as const, minutes: 180 },
-          { type: "condition" as const, condition: "stress" as const, delta: -2 }
-        ],
-        nextNodeId: "prologue.long-transition-montage",
-        outcome: {
-          title: "O dia finalmente termina",
-          text: "A noite passa pelas tarefas e conversas possíveis. Quando você se prepara para dormir, o dia está encerrado e não existe compromisso pendente naquele intervalo imediato.",
-          continueLabel: "Dormir e acompanhar a passagem dos dias",
-          activity: "Chegar ao fim do dia"
-        }
-      }))
-    },
-    {
-      id: "prologue.long-transition-montage",
-      moduleId: "prologue.temporal-bridges",
-      title: "Os dias entre um acontecimento e outro",
-      text: "Depois do sono, a rotina continua em dias que não trazem uma decisão decisiva: aulas, refeições, deslocamentos e conversas menores se repetem até o próximo acontecimento relevante.",
-      activity: "Acompanhar uma passagem de tempo sem pular compromissos",
+      text: "A chegada não encerra o dia sozinha. Comida, descanso, mensagens e convivência ocupam as horas seguintes. Somente quando a noite termina e você dorme a passagem dos dias pode começar.",
+      activity: "Encerrar a noite e dormir",
       timeBoundary: "montage",
       choices: routes.map((route) => {
         const morningMinute = Math.min(6 * 60 + 30, route.targetClock.minuteOfDay);
         return {
-          id: `montage-${route.id}`,
-          label: "Avançar pela rotina até o próximo acontecimento",
+          id: `sleep-and-montage-${route.id}`,
+          label: "Encerrar a noite, dormir e acompanhar a rotina até o próximo acontecimento",
           conditions: [
-            ...routeConditions(route),
+            routeCondition(route),
             { type: "location" as const, value: "home" }
           ],
           effects: [
+            { type: "condition" as const, condition: "energy" as const, delta: 8 },
+            { type: "condition" as const, condition: "stress" as const, delta: -3 },
             {
               type: "time_transition" as const,
               kind: "montage" as const,
@@ -431,9 +408,9 @@ function buildLongTemporalBridgeNodes(routes: readonly LongTemporalRoute[]): rea
           ],
           nextNodeId: "prologue.long-transition-next-event",
           outcome: {
-            title: "Uma nova data chega",
-            text: "A passagem do tempo ocorre somente depois do encerramento do dia anterior. Na data do próximo acontecimento, você acorda em casa e ainda precisa chegar ao local certo.",
-            continueLabel: "Começar o novo dia",
+            title: "Depois do sono, os dias avançam",
+            text: "Você dorme em casa. Nos dias seguintes, aulas, refeições, deslocamentos e conversas menores formam a rotina até chegar a data do próximo acontecimento relevante.",
+            continueLabel: "Começar a nova data",
             activity: "Preparar-se para o próximo acontecimento"
           }
         };
@@ -443,7 +420,7 @@ function buildLongTemporalBridgeNodes(routes: readonly LongTemporalRoute[]): rea
       id: "prologue.long-transition-next-event",
       moduleId: "prologue.temporal-bridges",
       title: "O próximo acontecimento",
-      text: "A data chegou, mas o personagem ainda não apareceu magicamente em outro lugar. A manhã começa em casa e inclui o tempo necessário para alcançar o próximo cenário.",
+      text: "A nova data começa em casa. Você ainda não apareceu magicamente em outro lugar: precisa preparar-se e completar o trajeto até o próximo cenário.",
       activity: "Chegar ao próximo acontecimento",
       choices: routes.map((route) => {
         const morningMinute = Math.min(6 * 60 + 30, route.targetClock.minuteOfDay);
@@ -452,7 +429,7 @@ function buildLongTemporalBridgeNodes(routes: readonly LongTemporalRoute[]): rea
           id: `arrive-${route.id}`,
           label: "Preparar-se e seguir para o próximo compromisso",
           conditions: [
-            ...routeConditions(route),
+            routeCondition(route),
             { type: "location" as const, value: "home" }
           ],
           effects: [
