@@ -12,6 +12,7 @@ import type {
   AppliedChange,
   GameScenarioSetup,
   GameState,
+  NarrativeChoiceOutcome,
   PlayerProfile,
   SkillModifier,
   StoryChoice,
@@ -137,7 +138,8 @@ function migrateCompatibleContent(
     rollIndex: candidate.rollIndex ?? fresh.rollIndex,
     seed: candidate.seed ?? fresh.seed,
     history: candidate.history ?? fresh.history,
-    scheduledConsequences: candidate.scheduledConsequences ?? fresh.scheduledConsequences
+    scheduledConsequences: candidate.scheduledConsequences ?? fresh.scheduledConsequences,
+    ...(candidate.pendingOutcome ? { pendingOutcome: candidate.pendingOutcome } : {})
   };
 }
 
@@ -235,7 +237,25 @@ function buildSkillModifiers(state: GameState, choice: StoryChoice): readonly Sk
   return modifiers;
 }
 
+function lowerFirst(value: string): string {
+  if (value.length === 0) return value;
+  return `${value.charAt(0).toLocaleLowerCase("pt-BR")}${value.slice(1)}`;
+}
+
+function defaultChoiceOutcome(choice: StoryChoice): NarrativeChoiceOutcome {
+  const action = lowerFirst(choice.label).replace(/[.!?]+$/, "");
+  return {
+    title: "Sua escolha ganha forma",
+    text: `Você decide ${action}. A ação acontece antes que o próximo momento da história comece.`,
+    continueLabel: "Continuar",
+    activity: "Viver a consequência da escolha"
+  };
+}
+
 export function chooseStoryOption(state: GameState, node: StoryNode, choiceId: string): GameState {
+  if (state.pendingOutcome) {
+    throw new Error("Conclua a consequência narrativa antes de fazer outra escolha.");
+  }
   if (node.id !== state.currentNodeId) {
     throw new Error(`Nó atual é ${state.currentNodeId}, mas foi recebido ${node.id}.`);
   }
@@ -279,10 +299,28 @@ export function chooseStoryOption(state: GameState, node: StoryNode, choiceId: s
       ? { triggeredConsequences: consequenceResult.triggered }
       : {})
   };
+  const outcome = choice.outcome ?? defaultChoiceOutcome(choice);
 
   return {
     ...nextState,
-    currentNodeId: nextNodeId,
+    currentNodeId: node.id,
+    pendingOutcome: {
+      ...outcome,
+      sourceNodeId: node.id,
+      sourceChoiceId: choice.id,
+      nextNodeId
+    },
     history: [...state.history, historyEntry]
+  };
+}
+
+export function continueStoryAfterOutcome(state: GameState): GameState {
+  if (!state.pendingOutcome) {
+    throw new Error("Não existe consequência narrativa aguardando continuidade.");
+  }
+  const { pendingOutcome, ...rest } = state;
+  return {
+    ...rest,
+    currentNodeId: pendingOutcome.nextNodeId
   };
 }
