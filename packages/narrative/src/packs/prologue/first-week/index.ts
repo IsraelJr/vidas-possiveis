@@ -1,4 +1,5 @@
 import { dayClosureNodes } from "./day-closure";
+import { mondayNightClosureNodes } from "./monday-night-closure";
 import { firstWeekPart1 } from "./part-1";
 import { firstWeekPart2 } from "./part-2";
 import { firstWeekPart3 } from "./part-3";
@@ -9,6 +10,7 @@ import { tuesdayClosureNodes } from "./tuesday-closure";
 export const firstWeekNodes = [
   ...firstWeekPart1,
   ...firstWeekPart2,
+  ...mondayNightClosureNodes,
   ...firstWeekPart3,
   ...tuesdayClosureNodes,
   ...firstWeekPart4,
