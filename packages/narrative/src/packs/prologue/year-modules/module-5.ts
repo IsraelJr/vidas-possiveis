@@ -2,12 +2,12 @@ import type { StoryNode } from "@vidas-possiveis/game-engine";
 import * as S from "./shared";
 
 export const yearModulePart5: readonly StoryNode[] = [
-{
+  {
     id: "prologue.module-relationship",
     moduleId: "prologue.relationship",
     title: "Uma conversa antes do fim do ano",
-    text: "{groupMateName} procura você durante o intervalo. Meses se passaram desde o trabalho, mas o que aconteceu entre vocês ainda influencia a conversa.",
-    activity: "Decidir o futuro da relação",
+    text: "{groupMateName} procura você durante o intervalo. Meses se passaram desde o trabalho, mas o que aconteceu entre vocês ainda influencia a distância entre as cadeiras, o tom das perguntas e aquilo que nenhum dos dois menciona primeiro.",
+    activity: "Decidir o futuro da relação no segundo ano",
     contextPersonIds: [S.GROUP],
     choices: [
       {
@@ -25,17 +25,17 @@ export const yearModulePart5: readonly StoryNode[] = [
             type: "add_memory",
             personId: S.GROUP,
             memory: {
-              id: "promised-contact-after-school",
-              summary: "Vocês combinaram de manter contato depois do fim da escola.",
+              id: "promised-contact-after-second-year",
+              summary: "Vocês combinaram de manter contato quando a convivência diária parasse nas férias.",
               kind: "promise",
               intensity: 7,
               resolved: false,
-              tags: ["school-end", "future", "friendship"]
+              tags: ["second-year-end", "future", "friendship"]
             }
           },
           { type: "set_clock", clock: { date: "2026-12-18", minuteOfDay: 14 * 60 } }
         ],
-        nextNodeId: "prologue.school-year-end"
+        nextNodeId: "prologue.second-year-vocational-review"
       },
       {
         id: "romantic-opening",
@@ -54,17 +54,17 @@ export const yearModulePart5: readonly StoryNode[] = [
             type: "add_memory",
             personId: S.GROUP,
             memory: {
-              id: "romantic-opening",
+              id: "romantic-opening-second-year",
               summary: "Vocês reconheceram a possibilidade de uma relação romântica, sem prometer o que ainda não viveram.",
               kind: "romance",
               intensity: 8,
               resolved: false,
-              tags: ["school-end", "romance", "consent"]
+              tags: ["second-year-end", "romance", "consent"]
             }
           },
           { type: "set_clock", clock: { date: "2026-12-18", minuteOfDay: 14 * 60 } }
         ],
-        nextNodeId: "prologue.school-year-end"
+        nextNodeId: "prologue.second-year-vocational-review"
       },
       {
         id: "repair-conflict",
@@ -79,27 +79,27 @@ export const yearModulePart5: readonly StoryNode[] = [
             type: "add_memory",
             personId: S.GROUP,
             memory: {
-              id: "late-reconciliation",
-              summary: "Perto do fim do ano, vocês tentaram conversar sobre o conflito do trabalho.",
+              id: "late-reconciliation-second-year",
+              summary: "Perto do fim do segundo ano, vocês tentaram conversar sobre o conflito do trabalho.",
               kind: "reconciliation",
               intensity: 6,
               resolved: true,
-              tags: ["school-end", "reconciliation"]
+              tags: ["second-year-end", "reconciliation", "third-year-return"]
             }
           },
           { type: "set_clock", clock: { date: "2026-12-18", minuteOfDay: 14 * 60 } }
         ],
-        nextNodeId: "prologue.school-year-end"
+        nextNodeId: "prologue.second-year-vocational-review"
       },
       {
         id: "let-relation-fade",
-        label: "Aceitar que a relação ficará no passado",
+        label: "Aceitar que a relação pode enfraquecer nas férias",
         conditions: [],
         effects: [
-          { type: "set_person_presence", personId: S.GROUP, presence: "inactive" },
+          { type: "set_person_presence", personId: S.GROUP, presence: "distant" },
           { type: "set_clock", clock: { date: "2026-12-18", minuteOfDay: 14 * 60 } }
         ],
-        nextNodeId: "prologue.school-year-end"
+        nextNodeId: "prologue.second-year-vocational-review"
       }
     ]
   }
