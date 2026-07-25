@@ -164,6 +164,20 @@ export interface TriggeredConsequence {
   readonly text: string;
   readonly changes: readonly AppliedChange[];
 }
+
+export interface NarrativeChoiceOutcome {
+  readonly title: string;
+  readonly text: string;
+  readonly continueLabel?: string;
+  readonly activity?: string;
+}
+
+export interface PendingNarrativeOutcome extends NarrativeChoiceOutcome {
+  readonly sourceNodeId: string;
+  readonly sourceChoiceId: string;
+  readonly nextNodeId: string;
+}
+
 export interface DecisionHistoryEntry {
   readonly nodeId: string;
   readonly choiceId: string;
@@ -198,6 +212,7 @@ export interface GameState {
   readonly seed: string;
   readonly history: readonly DecisionHistoryEntry[];
   readonly scheduledConsequences: readonly ScheduledConsequence[];
+  readonly pendingOutcome?: PendingNarrativeOutcome;
 }
 
 /**
@@ -250,6 +265,7 @@ export interface StoryChoice {
   readonly effects: readonly Effect[];
   readonly nextNodeId: string;
   readonly skillCheck?: StorySkillCheck;
+  readonly outcome?: NarrativeChoiceOutcome;
 }
 export interface StoryChoiceAvailability {
   readonly choice: StoryChoice;
