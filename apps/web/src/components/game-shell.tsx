@@ -4,6 +4,7 @@ import {
   ATTRIBUTE_KEYS,
   CONDITION_KEYS,
   chooseStoryOption,
+  continueStoryAfterOutcome,
   createGameState,
   formatDatePtBr,
   formatTime,
@@ -199,10 +200,11 @@ export function GameShell() {
   const labels = pack.presentation;
   const rawNode = getStoryNodeForState(state);
   const node = renderNodeForState(state, rawNode);
-  const choiceAvailability = getChoiceAvailability(state, node);
+  const pendingOutcome = state.pendingOutcome;
+  const choiceAvailability = pendingOutcome ? [] : getChoiceAvailability(state, node);
   const choices = choiceAvailability.filter((item) => item.available).map((item) => item.choice);
   const blockedChoices = choiceAvailability.filter((item) => !item.available);
-  const latestHistory = state.history.at(-1);
+  const latestHistory = pendingOutcome ? state.history.at(-1) : undefined;
   const commitment = node.nextCommitment;
   const minutesUntilCommitment = commitment ? minutesBetweenClocks(state.clock, commitment.clock) : null;
   const visibleChanges = latestHistory?.changes
@@ -210,9 +212,12 @@ export function GameShell() {
     .filter((change): change is string => change !== null) ?? [];
   const triggeredConsequences = latestHistory?.triggeredConsequences ?? [];
   const skillResult = latestHistory?.skillCheck ? OUTCOME_LABELS[latestHistory.skillCheck.outcome] : null;
-  const contextPeople = (node.contextPersonIds ?? [])
+  const contextPeople = pendingOutcome ? [] : (node.contextPersonIds ?? [])
     .map((personId) => state.people[personId])
     .filter((person): person is PersonState => Boolean(person));
+  const displayedTitle = pendingOutcome?.title ?? node.title;
+  const displayedText = pendingOutcome?.text ?? node.text;
+  const displayedActivity = pendingOutcome?.activity ?? node.activity;
 
   return (
     <main>
@@ -232,7 +237,7 @@ export function GameShell() {
           <div><span className="label">Data</span><strong>{formatDatePtBr(state.clock.date)}</strong></div>
           <div><span className="label">Horário</span><strong data-testid="current-time">{formatTime(state.clock.minuteOfDay)}</strong></div>
           <div><span className="label">Local</span><strong>{formatLocation(state.location, labels)}</strong></div>
-          <div><span className="label">Atividade atual</span><strong data-testid="current-activity">{node.activity}</strong></div>
+          <div><span className="label">Atividade atual</span><strong data-testid="current-activity">{displayedActivity}</strong></div>
           <div>
             <span className="label">Próximo compromisso</span>
             <strong>{commitment ? `${commitment.label} · ${formatClock(commitment.clock)}` : "Nenhum compromisso marcado"}</strong>
@@ -243,11 +248,11 @@ export function GameShell() {
           </div>
         </header>
 
-        <section className="panel hero">
-          <p className="label">{state.player.name} · Classe média</p>
+        <section className="panel hero" data-testid={pendingOutcome ? "choice-outcome" : "story-scene"}>
+          <p className="label">{pendingOutcome ? "O QUE ACONTECEU DEPOIS DA SUA ESCOLHA" : `${state.player.name} · Classe média`}</p>
           <p className="save-status" data-testid="save-status" aria-live="polite">Progresso: {PROGRESS_STATUS_LABELS[progressStatus]}</p>
-          <h1>{node.title}</h1>
-          <p>{node.text}</p>
+          <h1>{displayedTitle}</h1>
+          <p>{displayedText}</p>
 
           {contextPeople.map((person) => (
             <details className="person-context" key={person.id} data-testid={`person-context-${person.id}`}>
@@ -257,7 +262,18 @@ export function GameShell() {
             </details>
           ))}
 
-          {node.ending ? (
+          {pendingOutcome ? (
+            <div className="form-actions">
+              <button
+                className="primary"
+                data-testid="continue-outcome"
+                type="button"
+                onClick={() => setState((current) => current ? continueStoryAfterOutcome(current) : current)}
+              >
+                {pendingOutcome.continueLabel ?? "Continuar"}
+              </button>
+            </div>
+          ) : node.ending ? (
             <div>
               <p><strong>Esta etapa da sua história chegou ao fim.</strong> Suas escolhas abriram um caminho para os próximos anos.</p>
               <button className="primary" type="button" onClick={() => void resetLife()}>
@@ -383,7 +399,7 @@ export function GameShell() {
                 ))}
               </ul>
             </div>
-          ) : <p>Nenhuma opção indisponível neste momento.</p>}
+          ) : <p>{pendingOutcome ? "Aguardando a continuidade da consequência narrativa." : "Nenhuma opção indisponível neste momento."}</p>}
           <pre>{JSON.stringify({
             nodeId: state.currentNodeId,
             seed: state.seed,
@@ -396,6 +412,7 @@ export function GameShell() {
             progressStatus,
             people: state.people,
             scheduledConsequences: state.scheduledConsequences,
+            pendingOutcome,
             latestHistory
           }, null, 2)}</pre>
         </details>
