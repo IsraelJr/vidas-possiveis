@@ -196,7 +196,10 @@ describe("canonical prologue pack", () => {
 
   it("preserva pessoas, memórias e recursos ao migrar um final da versão de um ano", () => {
     const player = profile("old-finished");
-    const oldSetup = { ...createPrologueSetup(player), contentVersion: "prologue-1.0", contentMigration: undefined };
+    const currentSetup = createPrologueSetup(player);
+    const { contentMigration, ...oldSetupBase } = currentSetup;
+    expect(contentMigration).toBeDefined();
+    const oldSetup = { ...oldSetupBase, contentVersion: "prologue-1.0" };
     const old = {
       ...createGameState(player, oldSetup),
       currentNodeId: "ending.technical",
