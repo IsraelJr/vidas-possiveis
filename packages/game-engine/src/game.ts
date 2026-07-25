@@ -261,6 +261,7 @@ function validateTemporalEffects(node: StoryNode, effects: readonly Effect[]): v
   }
 
   const transition = transitions[0];
+  if (!transition) return;
   const requiredBoundary = transition.kind === "sleep" ? "day-end" : "montage";
   if (node.timeBoundary !== requiredBoundary) {
     throw new Error(
