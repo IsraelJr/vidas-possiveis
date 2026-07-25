@@ -148,7 +148,7 @@ export function GameShell() {
           <section className="panel hero">
             <p className="label">PRÓLOGO ESCOLAR</p>
             <h1>Vidas Possíveis</h1>
-            <p className="muted">Crie uma vida de classe média, atravesse o último ano da escola e veja como tempo, dinheiro e relações abrem caminhos diferentes.</p>
+            <p className="muted">Crie uma vida de classe média, atravesse dois anos do Ensino Médio e veja como tempo, dinheiro e relações mudam o caminho até a vida adulta.</p>
           </section>
           <section className="panel">
             <h2>Nova vida</h2>
@@ -176,7 +176,7 @@ export function GameShell() {
               </label>
               <div className="field static-field">
                 <span>Contexto do prólogo</span>
-                <strong>Classe média · 17 anos · 3º ano do Ensino Médio</strong>
+                <strong>Classe média · aproximadamente 16 anos · 2º ano do Ensino Médio</strong>
               </div>
             </div>
             <div className="form-actions">
@@ -218,9 +218,13 @@ export function GameShell() {
     <main>
       <div className="shell">
         {persistenceError ? <p className="alert" role="alert">{persistenceError}</p> : null}
-        {state.flags.migratedFromEarlierPrologue ? (
+        {state.flags.migratedToTwoYearPrologue ? (
           <p className="notice" data-testid="migration-notice">
-            Seu personagem foi trazido para a nova versão do prólogo. A história escolar recomeçou com as novas regras.
+            Sua vida escolar foi ampliada para dois anos. Suas escolhas, pessoas e lembranças compatíveis foram preservadas.
+          </p>
+        ) : state.flags.migratedFromEarlierPrologue ? (
+          <p className="notice" data-testid="migration-notice">
+            Seu personagem foi atualizado para a versão atual do prólogo. A história escolar recomeçou porque o progresso anterior não possuía todos os dados necessários.
           </p>
         ) : null}
 
