@@ -65,6 +65,82 @@ export function readPersistedPlayerProfile(state: unknown): PlayerProfile | null
   };
 }
 
+function canPreserveContentUpgrade(candidate: Partial<GameState>, setup: GameScenarioSetup): boolean {
+  const migration = setup.contentMigration;
+  return Boolean(
+    candidate.schemaVersion === 3 &&
+      candidate.scenario?.id === setup.id &&
+      typeof candidate.contentVersion === "string" &&
+      migration?.fromContentVersions.includes(candidate.contentVersion)
+  );
+}
+
+function migrateCompatibleContent(
+  candidate: Partial<GameState>,
+  player: PlayerProfile,
+  setup: GameScenarioSetup
+): GameState {
+  const fresh = createGameState(player, setup);
+  const migration = setup.contentMigration;
+  if (!migration) return fresh;
+
+  const completedByNode =
+    typeof candidate.currentNodeId === "string" &&
+    (migration.completionNodeIds?.includes(candidate.currentNodeId) ?? false);
+  const completedByFlag =
+    typeof migration.completionFlag === "string" && candidate.flags?.[migration.completionFlag] === true;
+  const shouldResume = completedByNode || completedByFlag;
+
+  const resetFlags = Object.fromEntries(
+    (migration.resetFlags ?? []).map((flag) => [flag, false])
+  ) as Readonly<Record<string, boolean>>;
+  const mergedFlags: Record<string, boolean> = {
+    ...fresh.flags,
+    ...(candidate.flags ?? {}),
+    ...resetFlags
+  };
+  if (migration.noticeFlag) mergedFlags[migration.noticeFlag] = true;
+
+  return {
+    ...fresh,
+    ...candidate,
+    schemaVersion: 3,
+    contentVersion: setup.contentVersion,
+    player,
+    clock:
+      shouldResume && migration.resumeClock
+        ? migration.resumeClock
+        : candidate.clock ?? fresh.clock,
+    location:
+      shouldResume && migration.resumeLocation
+        ? migration.resumeLocation
+        : candidate.location ?? fresh.location,
+    currentNodeId:
+      shouldResume && migration.resumeNodeId
+        ? migration.resumeNodeId
+        : candidate.currentNodeId ?? fresh.currentNodeId,
+    attributes: { ...fresh.attributes, ...(candidate.attributes ?? {}) },
+    conditions: { ...fresh.conditions, ...(candidate.conditions ?? {}) },
+    knowledge: { ...fresh.knowledge, ...(candidate.knowledge ?? {}) },
+    reputation: candidate.reputation ?? fresh.reputation,
+    moneyCents: candidate.moneyCents ?? fresh.moneyCents,
+    flags: mergedFlags,
+    people: { ...fresh.people, ...(candidate.people ?? {}) },
+    usedNames: { ...fresh.usedNames, ...(candidate.usedNames ?? {}) },
+    scenario: {
+      id: setup.id,
+      variables: {
+        ...fresh.scenario.variables,
+        ...(candidate.scenario?.variables ?? {})
+      }
+    },
+    rollIndex: candidate.rollIndex ?? fresh.rollIndex,
+    seed: candidate.seed ?? fresh.seed,
+    history: candidate.history ?? fresh.history,
+    scheduledConsequences: candidate.scheduledConsequences ?? fresh.scheduledConsequences
+  };
+}
+
 export function migrateGameState(state: unknown, setup: GameScenarioSetup): GameState {
   const player = readPersistedPlayerProfile(state);
   if (!player) throw new Error("O progresso salvo não contém um personagem válido.");
@@ -76,6 +152,10 @@ export function migrateGameState(state: unknown, setup: GameScenarioSetup): Game
     candidate.scenario?.id === setup.id
   ) {
     return candidate as GameState;
+  }
+
+  if (canPreserveContentUpgrade(candidate, setup)) {
+    return migrateCompatibleContent(candidate, player, setup);
   }
 
   const migrated = createGameState(player, setup);
