@@ -245,10 +245,10 @@ function lowerFirst(value: string): string {
 function defaultChoiceOutcome(choice: StoryChoice): NarrativeChoiceOutcome {
   const action = lowerFirst(choice.label).replace(/[.!?]+$/, "");
   return {
-    title: "Sua escolha ganha forma",
-    text: `Você decide ${action}. A ação acontece antes que o próximo momento da história comece.`,
+    title: "Sua decisão",
+    text: `Você decide ${action}.`,
     continueLabel: "Continuar",
-    activity: "Viver a consequência da escolha"
+    activity: "Seguir com a decisão"
   };
 }
 
