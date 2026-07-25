@@ -19,13 +19,15 @@ import { thirdYearNodes } from "./third-year";
 import { twoYearTransitionNodes } from "./two-year-transition";
 import { yearModuleNodes } from "./year-modules/index";
 
-const allNodes = [
+const sourceNodes = [
   ...firstWeekNodes,
   ...yearModuleNodes,
   ...twoYearTransitionNodes,
   ...thirdYearNodes,
   ...endingNodes
-].map(addChoiceContinuity);
+];
+
+const allNodes = addChoiceContinuity(sourceNodes);
 
 function createModules(nodes: readonly StoryNode[]): readonly NarrativeModule[] {
   const groups = new Map<string, StoryNode[]>();
