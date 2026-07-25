@@ -15,6 +15,55 @@ function withoutTeleport(effects: readonly Effect[]): readonly Effect[] {
   );
 }
 
+function rewireAfterSchoolChoice(choice: StoryChoice): StoryChoice {
+  const outcomes: Record<string, ChoiceOutcome> = {
+    "accept-by-bus": {
+      title: "O convite ocupa parte da tarde",
+      text: "Você aceita o convite e completa o deslocamento até o encontro. A escolha aconteceu, mas a terça-feira ainda não terminou e você ainda precisa voltar para casa.",
+      continueLabel: "Concluir a tarde",
+      activity: "Organizar a volta para casa"
+    },
+    "accept-by-app": {
+      title: "Um trajeto mais rápido",
+      text: "O carro reduz o tempo até o encontro. Depois de chegar e viver aquele momento, ainda existe o caminho de volta e o restante da terça-feira.",
+      continueLabel: "Concluir a tarde",
+      activity: "Organizar a volta para casa"
+    },
+    "negotiate-time": {
+      title: "Um encontro mais curto",
+      text: "Você combina um limite para o encontro sem desaparecer da escola nem avançar para outro dia. Primeiro ainda precisa concluir a tarde e voltar para casa.",
+      continueLabel: "Concluir a tarde",
+      activity: "Organizar a volta para casa"
+    },
+    "decline-and-explain": {
+      title: "O convite termina na escola",
+      text: "Você explica por que não irá. A conversa termina ali, mas você ainda está na escola e precisa sair, completar o trajeto e viver o restante da terça-feira.",
+      continueLabel: "Sair da escola",
+      activity: "Voltar para casa"
+    },
+    "lie-and-go": {
+      title: "A saída acontece, a consequência fica",
+      text: "Você sai mesmo assim. O passeio acontece, mas a mentira e a responsabilidade familiar continuam esperando quando você voltar para casa.",
+      continueLabel: "Concluir a tarde",
+      activity: "Organizar a volta para casa"
+    }
+  };
+  const outcome = outcomes[choice.id];
+  if (!outcome) return choice;
+
+  const effects =
+    choice.id === "decline-and-explain"
+      ? choice.effects.filter((effect) => effect.type !== "set_location")
+      : choice.effects;
+
+  return {
+    ...choice,
+    effects,
+    nextNodeId: "prologue.tuesday-route-home",
+    outcome
+  };
+}
+
 function rewireGossipChoice(choice: StoryChoice): StoryChoice {
   if (!GOSSIP_CHOICES_THAT_FINISH_AT_SCHOOL.has(choice.id)) return choice;
 
@@ -182,6 +231,10 @@ function compatibilityTransitionNode(node: StoryNode): StoryNode {
 
 export function addTemporalContinuity(nodes: readonly StoryNode[]): readonly StoryNode[] {
   return nodes.map((node) => {
+    if (node.id === "prologue.after-school-invite") {
+      return { ...node, choices: node.choices.map(rewireAfterSchoolChoice) };
+    }
+
     if (node.id === "prologue.after-social-choice") {
       return { ...node, choices: node.choices.map(rewireGossipChoice) };
     }
