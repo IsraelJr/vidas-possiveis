@@ -41,6 +41,21 @@ function renderChoice(choice: StoryChoice, values: Readonly<Record<string, strin
     ...choice,
     label: renderTemplate(choice.label, values),
     effects: choice.effects.map((effect) => renderEffect(effect, values)),
+    ...(choice.outcome
+      ? {
+          outcome: {
+            ...choice.outcome,
+            title: renderTemplate(choice.outcome.title, values),
+            text: renderTemplate(choice.outcome.text, values),
+            ...(choice.outcome.continueLabel
+              ? { continueLabel: renderTemplate(choice.outcome.continueLabel, values) }
+              : {}),
+            ...(choice.outcome.activity
+              ? { activity: renderTemplate(choice.outcome.activity, values) }
+              : {})
+          }
+        }
+      : {}),
     ...(choice.skillCheck
       ? {
           skillCheck: {
