@@ -1,4 +1,10 @@
-import type { Effect, ImmediateEffect, StoryNode } from "@vidas-possiveis/game-engine";
+import {
+  compareClocks,
+  type Condition,
+  type Effect,
+  type ImmediateEffect,
+  type StoryNode
+} from "@vidas-possiveis/game-engine";
 import type { NarrativePack } from "./pack";
 
 export interface NarrativeValidationIssue {
@@ -10,6 +16,74 @@ function immediateEffects(effects: readonly Effect[]): readonly ImmediateEffect[
   return effects.flatMap((effect) =>
     effect.type === "schedule_consequence" ? [...effect.effects] : [effect]
   );
+}
+
+function validateTemporalEffectGroup(
+  pack: NarrativePack,
+  node: StoryNode,
+  choiceId: string,
+  effects: readonly ImmediateEffect[],
+  conditions: readonly Condition[],
+  issues: NarrativeValidationIssue[]
+): void {
+  const transitions = effects.filter((effect) => effect.type === "time_transition");
+  if (transitions.length === 0) return;
+
+  if (transitions.length > 1) {
+    issues.push({
+      code: "multiple-time-transitions",
+      message: `${node.id}/${choiceId} executa mais de uma transição temporal`
+    });
+  }
+  if (effects.some((effect) => effect.type === "set_location")) {
+    issues.push({
+      code: "mixed-location-time-transition",
+      message: `${node.id}/${choiceId} muda de local e salta no tempo na mesma escolha`
+    });
+  }
+
+  for (const transition of transitions) {
+    const expectedBoundary = transition.kind === "sleep" ? "day-end" : "montage";
+    if (node.timeBoundary !== expectedBoundary) {
+      issues.push({
+        code: "invalid-time-boundary",
+        message: `${node.id}/${choiceId} usa ${transition.kind} fora de ${expectedBoundary}`
+      });
+    }
+    if (transition.requiredLocation && !pack.presentation.locationLabels[transition.requiredLocation]) {
+      issues.push({
+        code: "missing-location-label",
+        message: `${node.id}/${choiceId} exige o local sem rótulo ${transition.requiredLocation}`
+      });
+    }
+    if (transition.kind === "sleep" && !transition.requiredLocation) {
+      issues.push({
+        code: "missing-sleep-location",
+        message: `${node.id}/${choiceId} tenta dormir sem declarar onde o personagem está`
+      });
+    }
+    if (
+      transition.requiredLocation &&
+      !conditions.some(
+        (condition) =>
+          condition.type === "location" && condition.value === transition.requiredLocation
+      )
+    ) {
+      issues.push({
+        code: "missing-time-transition-location-condition",
+        message: `${node.id}/${choiceId} não exige que o personagem já esteja em ${transition.requiredLocation}`
+      });
+    }
+    if (
+      node.nextCommitment &&
+      compareClocks(transition.clock, node.nextCommitment.clock) > 0
+    ) {
+      issues.push({
+        code: "time-transition-skips-commitment",
+        message: `${node.id}/${choiceId} ultrapassa o compromisso ${node.nextCommitment.label}`
+      });
+    }
+  }
 }
 
 export function validateNarrativePack(pack: NarrativePack): readonly NarrativeValidationIssue[] {
@@ -63,6 +137,40 @@ export function validateNarrativePack(pack: NarrativePack): readonly NarrativeVa
             message: `${nodeId}/${choice.id} usa o conhecimento sem rótulo ${condition.knowledge}`
           });
         }
+      }
+
+      const directEffects = choice.effects.filter(
+        (effect): effect is ImmediateEffect => effect.type !== "schedule_consequence"
+      );
+      validateTemporalEffectGroup(
+        pack,
+        node,
+        choice.id,
+        directEffects,
+        choice.conditions,
+        issues
+      );
+
+      for (const scheduled of choice.effects.filter(
+        (effect) => effect.type === "schedule_consequence"
+      )) {
+        if (scheduled.effects.some((effect) => effect.type === "time_transition")) {
+          issues.push({
+            code: "scheduled-time-transition",
+            message: `${nodeId}/${choice.id} agenda um salto de tempo sem uma cena de encerramento`
+          });
+        }
+      }
+
+      for (const [outcomeTier, outcome] of Object.entries(choice.skillCheck?.outcomes ?? {})) {
+        validateTemporalEffectGroup(
+          pack,
+          node,
+          `${choice.id}/${outcomeTier}`,
+          outcome.effects,
+          choice.conditions,
+          issues
+        );
       }
 
       const effects = [
