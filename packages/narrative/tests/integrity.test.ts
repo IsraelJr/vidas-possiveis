@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   chooseStoryOption,
   compareClocks,
+  continueStoryAfterOutcome,
   createGameState,
   getAvailableChoices,
   migrateGameState,
@@ -54,12 +55,14 @@ function simulate(id: string, footballLifeOwned = false) {
     const available = getAvailableChoices(state, node);
     expect(available.length, `Sem escolha em ${node.id}`).toBeGreaterThan(0);
     const before = state.clock;
-    state = chooseStoryOption(state, node, available[0]!.id);
-    expect(compareClocks(state.clock, before), `Tempo retrocedeu em ${node.id}`).toBeGreaterThanOrEqual(0);
+    const pending = chooseStoryOption(state, node, available[0]!.id);
+    expect(pending.pendingOutcome, `Sem consequência narrada em ${node.id}/${available[0]!.id}`).toBeDefined();
+    expect(compareClocks(pending.clock, before), `Tempo retrocedeu em ${node.id}`).toBeGreaterThanOrEqual(0);
     if (node.activity === "Apresentar o trabalho") {
       expect(before.date).toBe("2026-02-20");
       expect(before.minuteOfDay).toBeGreaterThanOrEqual(8 * 60);
     }
+    state = continueStoryAfterOutcome(pending);
     steps += 1;
   }
 
@@ -100,6 +103,30 @@ describe("canonical prologue pack", () => {
       "prologue.ending"
     ]));
     expect(schoolProloguePack.version).toBe("prologue-2.0");
+  });
+
+  it("garante consequência narrativa antes de toda transição do prólogo", () => {
+    for (const node of rawNodes) {
+      for (const choice of node.choices) {
+        expect(choice.outcome?.title, `${node.id}/${choice.id} sem título de consequência`).toBeTruthy();
+        expect(choice.outcome?.text, `${node.id}/${choice.id} sem texto de consequência`).toBeTruthy();
+        expect(choice.outcome?.continueLabel, `${node.id}/${choice.id} sem continuidade`).toBeTruthy();
+      }
+    }
+  });
+
+  it("dramatiza de forma específica as três escolhas antes do primeiro sinal", () => {
+    const player = profile("opening-continuity", "João");
+    const state = createGameState(player, createPrologueSetup(player));
+    const beforeClass = schoolProloguePack.renderNode(state, storyNodes.get("prologue.before-class")!);
+    const review = beforeClass.choices.find((choice) => choice.id === "review-before-class")!;
+    const talk = beforeClass.choices.find((choice) => choice.id === "talk-before-class")!;
+    const quiet = beforeClass.choices.find((choice) => choice.id === "wait-quietly")!;
+
+    expect(review.outcome?.text).toContain("caderno");
+    expect(talk.outcome?.text).toContain("entram juntos");
+    expect(quiet.outcome?.text).toContain("conversas dos outros");
+    expect(talk.outcome?.text).not.toContain("{friendName}");
   });
 
   it("usa apenas o banco temporário autorizado e quatro históricos", () => {
@@ -148,12 +175,23 @@ describe("canonical prologue pack", () => {
     expect(setup.people["prologue-group-mate"]?.contextSummary.length).toBeGreaterThan(80);
   });
 
-  it("renderiza nomes e contextos sem tokens pendentes", () => {
+  it("renderiza nomes, contextos e consequências sem tokens pendentes", () => {
     const player = profile("render");
     const state = createGameState(player, createPrologueSetup(player, { footballLifeOwned: true }));
     for (const raw of rawNodes) {
       const node = schoolProloguePack.renderNode(state, raw);
-      const text = [node.title, node.text, node.activity, ...node.choices.map((choice) => choice.label)].join(" ");
+      const text = [
+        node.title,
+        node.text,
+        node.activity,
+        ...node.choices.flatMap((choice) => [
+          choice.label,
+          choice.outcome?.title ?? "",
+          choice.outcome?.text ?? "",
+          choice.outcome?.continueLabel ?? "",
+          choice.outcome?.activity ?? ""
+        ])
+      ].join(" ");
       expect(text).not.toMatch(/\{[a-zA-Z0-9_]+\}/);
     }
   });
@@ -268,11 +306,14 @@ describe("canonical prologue pack", () => {
   it("confirma respeitosamente quando uma vida Futebol adquirida não é escolhida", () => {
     const owned = stateAtNode("prologue.formation-choice", true);
     const choiceNode = renderNodeForState(owned);
-    const confirmation = chooseStoryOption(owned, choiceNode, "choose-technical-owned");
+    const confirmationPending = chooseStoryOption(owned, choiceNode, "choose-technical-owned");
+    expect(confirmationPending.pendingOutcome?.nextNodeId).toBe("prologue.confirm-technical");
+    const confirmation = continueStoryAfterOutcome(confirmationPending);
     expect(confirmation.currentNodeId).toBe("prologue.confirm-technical");
     const rendered = renderNodeForState(confirmation);
     expect(rendered.text).toContain("continuará disponível em novas vidas");
-    const returned = chooseStoryOption(confirmation, rendered, "return-from-technical-confirmation");
+    const returnedPending = chooseStoryOption(confirmation, rendered, "return-from-technical-confirmation");
+    const returned = continueStoryAfterOutcome(returnedPending);
     expect(returned.currentNodeId).toBe("prologue.formation-choice");
   });
 
@@ -281,7 +322,13 @@ describe("canonical prologue pack", () => {
       node.title,
       node.text,
       node.activity,
-      ...node.choices.map((choice) => choice.label)
+      ...node.choices.flatMap((choice) => [
+        choice.label,
+        choice.outcome?.title ?? "",
+        choice.outcome?.text ?? "",
+        choice.outcome?.continueLabel ?? "",
+        choice.outcome?.activity ?? ""
+      ])
     ]).join(" ").toLowerCase();
     for (const term of forbiddenPlayerTerms) expect(playerText).not.toContain(term);
   });
