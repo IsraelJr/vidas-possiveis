@@ -1,4 +1,5 @@
 import type { Effect, StoryChoice, StoryNode } from "@vidas-possiveis/game-engine";
+import { addVacationTemporalContinuity } from "./vacation-temporal-continuity";
 
 function removeNextDayTeleport(effects: readonly Effect[]): readonly Effect[] {
   return effects.filter(
@@ -53,7 +54,7 @@ function rewireNightChoice(choice: StoryChoice): StoryChoice {
 export function addMondayTemporalContinuity(
   nodes: readonly StoryNode[]
 ): readonly StoryNode[] {
-  return nodes.map((node) => {
+  const mondaySafeNodes = nodes.map((node) => {
     if (node.id === "prologue.work-session") {
       return {
         ...node,
@@ -67,11 +68,13 @@ export function addMondayTemporalContinuity(
     if (node.id === "prologue.night-plan") {
       return {
         ...node,
-        timeBoundary: "day-end",
+        timeBoundary: "day-end" as const,
         choices: node.choices.map(rewireNightChoice)
       };
     }
 
     return node;
   });
+
+  return addVacationTemporalContinuity(mondaySafeNodes);
 }
