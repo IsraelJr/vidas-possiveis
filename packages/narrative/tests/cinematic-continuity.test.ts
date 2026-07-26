@@ -98,6 +98,21 @@ describe("cinematic scene continuity", () => {
     expect(closure?.choices.every((choice) => choice.nextNodeId === "prologue.wednesday-bedtime")).toBe(true);
   });
 
+  it("encerra a terça-feira antes de abrir a fofoca de quarta-feira", () => {
+    const socialTransition = storyNodes.get("prologue.social-transition");
+    const tuesdayRoute = storyNodes.get("prologue.tuesday-route-home");
+    const tuesdayEvening = storyNodes.get("prologue.tuesday-evening");
+    const tuesdayBedtime = storyNodes.get("prologue.tuesday-bedtime");
+    const wednesdayMorning = storyNodes.get("prologue.wednesday-morning");
+
+    expect(socialTransition?.choices.every((choice) => choice.nextNodeId === "prologue.tuesday-route-home")).toBe(true);
+    expect(tuesdayRoute?.choices.every((choice) => choice.nextNodeId === "prologue.tuesday-evening")).toBe(true);
+    expect(tuesdayEvening?.choices.every((choice) => choice.nextNodeId === "prologue.tuesday-bedtime")).toBe(true);
+    expect(tuesdayBedtime?.timeBoundary).toBe("day-end");
+    expect(tuesdayBedtime?.choices.every((choice) => choice.nextNodeId === "prologue.wednesday-morning")).toBe(true);
+    expect(wednesdayMorning?.choices.every((choice) => choice.nextNodeId === "prologue.after-social-choice")).toBe(true);
+  });
+
   it("não manda uma discussão resolvida diretamente para casa ou para sexta-feira", () => {
     const afterSocialChoice = storyNodes.get("prologue.after-social-choice");
     const peacefulChoiceIds = [
