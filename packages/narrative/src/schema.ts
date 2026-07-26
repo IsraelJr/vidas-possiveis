@@ -15,6 +15,8 @@ const personCategorySchema = z.enum(["scene", "known", "important"]);
 const personPresenceSchema = z.enum(["active", "distant", "inactive", "unavailable", "deceased"]);
 const comparisonOperatorSchema = z.enum([">=", "<=", ">", "<", "=="]);
 const locationSchema = z.string().min(1);
+const timeTransitionKindSchema = z.enum(["sleep", "montage", "recovery", "institutional"]);
+const timeBoundarySchema = z.enum(["day-end", "montage"]);
 const clockSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   minuteOfDay: z.number().int().min(0).max(1439)
@@ -67,6 +69,12 @@ const immediateEffectSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("flag"), flag: z.string().min(1), value: z.boolean() }),
   z.object({ type: z.literal("advance_time"), minutes: z.number().int().nonnegative() }),
   z.object({ type: z.literal("set_clock"), clock: clockSchema }),
+  z.object({
+    type: z.literal("time_transition"),
+    clock: clockSchema,
+    kind: timeTransitionKindSchema,
+    requiredLocation: locationSchema.optional()
+  }),
   z.object({ type: z.literal("set_location"), location: locationSchema }),
   z.object({
     type: z.literal("relationship"),
@@ -136,6 +144,7 @@ export const storyNodeSchema = z.object({
   text: z.string().min(1),
   activity: z.string().min(1),
   nextCommitment: z.object({ label: z.string().min(1), clock: clockSchema }).optional(),
+  timeBoundary: timeBoundarySchema.optional(),
   contextPersonIds: z.array(z.string().min(1)).optional(),
   moduleId: z.string().min(1).optional(),
   ending: z.boolean().optional(),

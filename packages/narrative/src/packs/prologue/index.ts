@@ -15,6 +15,8 @@ import {
 import { addChoiceContinuity } from "./choice-continuity";
 import { endingNodes } from "./endings";
 import { firstWeekNodes } from "./first-week/index";
+import { addMondayTemporalContinuity } from "./monday-temporal-continuity";
+import { addTemporalContinuity } from "./temporal-continuity";
 import { thirdYearNodes } from "./third-year";
 import { twoYearTransitionNodes } from "./two-year-transition";
 import { yearModuleNodes } from "./year-modules/index";
@@ -27,7 +29,9 @@ const sourceNodes = [
   ...endingNodes
 ];
 
-const allNodes = addChoiceContinuity(sourceNodes);
+const allNodes = addChoiceContinuity(
+  addTemporalContinuity(addMondayTemporalContinuity(sourceNodes))
+);
 
 function createModules(nodes: readonly StoryNode[]): readonly NarrativeModule[] {
   const groups = new Map<string, StoryNode[]>();
@@ -181,6 +185,19 @@ export const schoolProloguePack: NarrativePack = {
       hidFightFromGroup: "Escondeu a briga do grupo",
       apologizedAfterFight: "Pediu desculpas depois da briga",
       fightArcClosed: "Concluiu as consequências imediatas da briga",
+      finishedWednesdayClasses: "Concluiu as aulas de quarta-feira",
+      finishedWednesdayAtHome: "Concluiu a quarta-feira em casa",
+      talkedDuringFightCommute: "Conversou no trajeto depois da briga",
+      silentDuringFightCommute: "Ficou em silêncio no trajeto depois da briga",
+      admittedFightAtHome: "Assumiu a briga diante da família",
+      minimizedFightAtHome: "Diminuiu a gravidade da briga em casa",
+      silentAboutFightAtHome: "Evitou explicar a briga em casa",
+      sleptWednesday: "Dormiu depois de encerrar a quarta-feira",
+      rehearsedThursday: "Ensaiou com o grupo na quinta-feira",
+      reviewedThursday: "Revisou sua parte na quinta-feira",
+      preparedNightBeforePresentation: "Preparou o material na véspera",
+      restedNightBeforePresentation: "Descansou na véspera",
+      sleptBeforePresentation: "Dormiu antes da apresentação",
       supportedFamily: "Ajudou a família",
       liedToFamily: "Mentiu para sair",
       footballBridgeActive: "Mantém uma trajetória no futebol",

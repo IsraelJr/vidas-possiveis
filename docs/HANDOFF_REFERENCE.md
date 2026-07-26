@@ -8,7 +8,7 @@ Este projeto segue:
 - **Prólogo Canônico v2.0**;
 - **Arquitetura Canônica de Pacotes Narrativos v1.0.0**.
 
-Documentos consolidados em 25/07/2026.
+Documentos consolidados em 26/07/2026.
 
 Antes de alterar motor, narrativa, personagens, relógio, atributos, relacionamentos, prólogo ou profissão, consulte obrigatoriamente:
 
@@ -46,24 +46,46 @@ Em caso de divergência:
 - ponte Futebol escolar: implementada em nível inicial;
 - confirmação ao não escolher uma vida Futebol disponível: implementada;
 - migração de saves da versão de um ano: implementada com preservação do estado compatível;
+- continuidade pós-escolha: implementada; toda escolha mostra sua consequência antes da próxima cena;
+- pequenos arcos graves: a briga escolar possui intervenção, coordenação, consequência, saída acompanhada, conversa familiar e encerramento da noite;
+- progressão temporal protegida: implementada no branch `fix/day-closure-before-time-skip`, PR `#16`, aguardando CI definitiva e integração;
 - narrativa: pacotes e módulos;
 - conhecimentos e locais: definidos por pacote;
 - interface: rótulos fornecidos pelo pacote;
 - prova de modularidade: pacote executável independente de jogador de futebol;
-- PR funcional: `#11`;
-- SHA validado: `55900740c91e58426c18d2ac4ac51dd8bd6ad72f`;
-- CI definitiva: `30147307322`, aprovada;
-- testes: 43 testes unitários e de integridade, 25 vidas simuladas e E2E completo;
-- commit funcional na `main`: `5d19911e5c9ba17e93db5e78b45ed534d974fae2`;
+- último commit integrado à `main`: `0322fa5de4f7005d61bfa65483f55f22ca673579` pelo PR `#15`;
+- PR temporal atual: `#16`;
+- head funcional temporal antes desta atualização documental: `21265828f6ca79b167c75e19cfb0c7e4f790213c`;
+- CI do PR temporal: ainda precisa ficar totalmente verde após os últimos ajustes;
 - produção na Vercel: ainda não validada porque o plano recusou novos builds por `build-rate-limit`.
 
-A implementação está integrada à `main`, mas não deve ser descrita como publicada em produção até a Vercel aceitar um novo build e o teste de fumaça público ser concluído.
+A correção temporal não deve ser descrita como integrada ou publicada enquanto o PR `#16` não estiver aprovado, mesclado e, para produção, publicado pela Vercel com teste de fumaça.
+
+## Contrato obrigatório de progressão temporal
+
+- `set_clock` serve apenas para ajustar o horário dentro da mesma data;
+- qualquer mudança de data exige o efeito explícito `time_transition`;
+- dormir e avançar para outro dia só pode acontecer em uma cena marcada como `day-end`;
+- antes do sono, o personagem deve já estar no local declarado para dormir;
+- uma escolha não pode transportar o personagem para casa e fazê-lo dormir ao mesmo tempo;
+- deslocamento, chegada, atividades domésticas e sono são etapas narrativas separadas;
+- resolver uma discussão não autoriza mandar o personagem diretamente para casa;
+- chegar em casa não significa que o dia terminou;
+- o salto de dias só acontece depois que o arco local foi concluído, o restante do dia foi vivido e o personagem dormiu;
+- montagens temporais longas exigem uma cena marcada como `montage`;
+- uma montagem não pode atravessar consequência programada nem compromisso conhecido;
+- consequências que vencem durante o sono devem ser processadas ao acordar;
+- o pacote narrativo deve ser invalidado quando uma transição temporal não declarar fronteira, local ou condição coerente;
+- nenhuma cena pode mudar de dia silenciosamente por meio de `set_clock`.
 
 ## Regras que não podem ser ignoradas
 
 - relógio calculado pelo motor e sem regressão;
 - data apresentada ao jogador deve incluir o ano quando a narrativa atravessar anos letivos;
 - atividade compatível com horário e local;
+- deslocamentos devem ser vividos ou narrados com duração e destino coerentes;
+- pequenos arcos precisam terminar antes da transição para outro assunto;
+- cenas não podem usar casa, sono ou salto temporal apenas para encobrir um corte narrativo;
 - nomes únicos por vida;
 - mesma pessoa mantém o mesmo `personId`;
 - contexto acessível para pessoas já conhecidas;

@@ -22,6 +22,8 @@ export type PersonGender = "woman" | "man";
 export type RomanticPreference = "women" | "men" | "both" | "none" | "undefined";
 /** Locais são identificadores livres definidos por cada pacote narrativo. */
 export type LocationId = string;
+export type TimeBoundary = "day-end" | "montage";
+export type TimeTransitionKind = "sleep" | "montage" | "recovery" | "institutional";
 
 export interface GameClock {
   readonly date: string;
@@ -118,6 +120,12 @@ export type ImmediateEffect =
   | { readonly type: "flag"; readonly flag: string; readonly value: boolean }
   | { readonly type: "advance_time"; readonly minutes: number }
   | { readonly type: "set_clock"; readonly clock: GameClock }
+  | {
+      readonly type: "time_transition";
+      readonly clock: GameClock;
+      readonly kind: TimeTransitionKind;
+      readonly requiredLocation?: LocationId;
+    }
   | { readonly type: "set_location"; readonly location: LocationId }
   | { readonly type: "relationship"; readonly personId: string; readonly dimension: RelationshipDimension; readonly delta: number }
   | { readonly type: "add_memory"; readonly personId: string; readonly memory: Omit<PersonMemory, "occurredAt"> }
@@ -279,6 +287,7 @@ export interface StoryNode {
   readonly text: string;
   readonly activity: string;
   readonly nextCommitment?: StoryCommitment;
+  readonly timeBoundary?: TimeBoundary;
   readonly contextPersonIds?: readonly string[];
   readonly moduleId?: string;
   readonly choices: readonly StoryChoice[];
